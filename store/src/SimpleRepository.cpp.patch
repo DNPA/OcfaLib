@@ -1,0 +1,29 @@
+175,178c175,187
+<       if (lt == hard){
+< 	
+< 	ocfaLog(LOG_DEBUG, "Creating hardlink ");	
+< 	(*estore)->setHardLink(linkname);
+---
+>       switch (lt) {
+>         case hard:
+>             ocfaLog(LOG_ERR, "Creating hardlink ");
+>             (*estore)->setHardLink(linkname);
+>             break;
+>         case soft:
+> 	    ocfaLog(LOG_ERR, "Creating softlink ");
+> 	    (*estore)->setSoftLink(linkname);
+>             break;
+>         case carvpath:
+>             ocfaLog(LOG_ERR, "Creating carvpathlink ");
+>             (*estore)->setCarvPathLink(linkname);
+>             break;
+180,183c189,192
+<       else {	
+< 
+< 	ocfaLog(LOG_DEBUG, "Creating softlink ");
+< 	(*estore)->setSoftLink(linkname);
+---
+>       if (!((*estore)->isLinked())) {
+>          ocfaLog(LOG_ERR, "Failed to set link");
+>          delete *estore;
+>          *estore=0;

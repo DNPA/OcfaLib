@@ -1,0 +1,39 @@
+INTERFACE
+  ActiveJob		PROCESSED
+  ArgumentIterator	PROCESSED
+  ChildIterator		PROCESSED
+  commit_type		PROCESSED
+  CoParentIterator	PROCESSED
+  Evidence		PROCESSED
+  ExtendableEvidence	PROCESSED
+  JobIterator		PROCESSED
+  LogIterator		PROCESSED	
+  MapEvidence		REMOVED
+  MetaIterator		PROCESSED
+  OcfaIterator		PROCESSED
+  
+  
+BOTH:
+  EvidenceFactory
+  CoParent
+  JobInfo
+  
+  
+IMPLEMENTATIE
+  CoParentImpl
+  defines
+  DomActiveJob
+  DomArgumentIterator
+  DomChildIterator
+  DomCoParentIterator
+  DomEvidenceFactory
+  DomEvidence		PROCESSED 
+  DomTopNode		PROCESSED
+  DomExtendableEvidence
+  DomHelper
+  DomJobIterator
+  DomLogIterator
+  DomMapEvidence        REMOVED
+  DomMetaIterator
+  DomOcfaIterator
+  OcfaErrorHandler

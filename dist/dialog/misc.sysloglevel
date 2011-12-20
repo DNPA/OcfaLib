@@ -1,0 +1,4 @@
+#!/bin/sh
+echo -n syslog= >&2 
+dialog --no-cancel --radiolist "Kies het syslog level vanaf welke gelogd moet worden" 40 40 10 debug "" 0 info "" 0 notice "" on warning "" 0 err "" 0 crit "" 0 alert "" 0 emerg "" 0
+echo >&2

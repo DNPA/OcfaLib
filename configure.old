@@ -1,0 +1,289 @@
+#!/usr/bin/perl
+
+# The Open Computer Forensics Library
+# Copyright (C) KLPD 2003..2006  <ocfa@dnpa.nl>
+#
+# This library is free software; you can redistribute it and/or
+# modify it under the terms of the GNU Lesser General Public
+# License as published by the Free Software Foundation; either
+# version 2.1 of the License, or (at your option) any later version.
+#
+# This library is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public
+# License along with this library; if not, write to the Free Software
+# Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307  USA
+
+open(MAKEINFO,">configure.makeinfo");
+$uname=lc(`uname`);
+chomp($uname);
+$machine=lc(`uname -m`);
+chomp($machine);
+$gccverdata=`g++ --version`;
+$gccverdata =~ s/\r?\n.*//;
+$gccversion=4001;  # By default lets asume the 4.0
+if ($gccverdata =~ /\s+(\d+)\.(\d+)\.\d+\s/) {
+  $gccversion = $1 * 1000 + $2;
+} else {
+  print "!! WARNING !! : unable to determing g++ version, assuming 4.1 or up\n";
+}
+if ($gccversion <= 4000) {
+  print "Older version of g++ that might have the void pointer to function pointer casts bug\n";
+  print MAKEINFO "GCCFLAGS += -DVOID_FP_CAST_WORKAROUND\n";
+}
+$libtool="libtool";
+$libarch="";
+if ($uname eq "linux") {
+  print "Linux\nSetting DLINUX flag\n";
+  print MAKEINFO "GCCFLAGS += -DLINUX\n";
+  if ($machine eq "x86_64") {
+     print MAKEINFO "GCCFLAGS += -DPOINTERS_64BIT\n";
+     if ($fpcastbug) {
+        print "!!! WARNING !!! : Older version of g++ on 64 bit linux. Workaround currently untested.\n";
+     }
+     if (-f "/usr/lib64/libc.so") {
+        print "WARNING: experimental lib64 support enabled, looking for lib64 dirs instead of lib dirs\n";
+        $libarch="64";
+     } else {
+        print "WARNING: experimental lib64 support disabled\n";
+     }
+  } else {
+     print "NOTICE: non x86_64 linux architecture, assuming 32 bits\n";
+  }
+} elsif ($uname eq "sunos") {
+  print "Solaris\nSetting flags for big endiannes";
+  print MAKEINFO "GCCFLAGS += -DBIG_ENDIAN=1 -DBYTE_ORDER=1\n";
+  print "Seting /usr/sfw/include as aditional path to look for crypt inc dir\n";
+  print MAKEINFO "INCCRYPTDIR=-I/usr/sfw/include\n";
+  print "Seting as aditional path to look for crypt libs\n";
+  print MAKEINFO "LIBCRYPTDIR=-L/usr/sfw/lib\n";
+} elsif ($uname eq "osx") {
+  print "OS X\nSeting glibtool\n";
+  $libtool="glibtool";
+} else {
+  print "WARNING: Unknown OS\n";
+}
+if ($fpcastbug) {
+   print MAKEINFO "GCCFLAGS += -DVOID_FP_CAST_WORKAROUND\n";
+}
+print MAKEINFO "LIBTOOL=$libtool\n";
+#Dont think this hurts anything
+print MAKEINFO "GCCFLAGS += -D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE -D_LARGEFILE64_SOURCE -D_REENTRANT\n";
+if ((-e "/usr/include/iconv.h") && (-e "/usr/local/include/iconv.h")) {
+  print "!! WARNING !! : Two versions of iconv.h found, possible bad configuration\n";
+  print "                you may need to rename /usr/local/include/iconv.h in order to\n";
+  print "                prefent it from being used\n";
+}
+$configok=1;
+if (open(IH,"/usr/include/iconv.h") ||open(IH,"/usr/local/include/iconv.h") ) {
+  $consticonv=0;
+  while(<IH>) {
+    if (/size_t.*const/) {
+      $consticonv=1;
+    }
+  }
+} else {
+  print "ERROR: Unable to open /usr/include/iconv.h for parsing\n";
+  $configok=0;
+}
+close(IH);
+if ($consticonv) {
+  print "iconv buffers are set as const\n";
+  print MAKEINFO "GCCFLAGS += -DCONST_ICONV_INBUF\n";
+} else {
+  print "default (non const) iconv buffers\n";
+}
+$needlibiconv=1;
+$lbs="";
+$lbsregex="";
+if (opendir(LIB,"/lib$libarch")) {
+  while($file=readdir(LIB)) {
+   if ($file =~ /^libc.so/) {
+     if (open(OBJDUMP,"objdump -T /lib${libarch}/$file|")) {
+       while(<OBJDUMP>) {
+        if (/\siconv$/) {
+           $needlibiconv=0;
+	}
+       }
+     } else {
+        print "ERROR: Unable to open /lib${libarch}/$file with objdump\n";
+        $configok=0;
+     }
+   }
+  }
+} else {
+   print "ERROR: Can not read the /lib${libarch} dir\n";
+   $configok=0;
+}
+$foundiconv=0;
+foreach $libdir ("/usr/lib$libarch","/usr/local/lib$libarch") {
+  if (opendir(LIB,$libdir))
+  {while($file=readdir(LIB)) {
+    $path="${libdir}/$file";
+    if ($file =~ /^lib(boost_serialization.*)\.a/) {
+     unless (-l $path) {
+       $lbsreal="$1";
+     }
+     $lbs=$1;
+    }
+    if ($file =~ /^lib(boost_regex.*)\.a/) {
+      $lbsregex=$1;
+    }
+    if (file =~ /^libiconv/) {
+       $foundiconv=1;
+    }
+  }} else {
+     print "WARNING: Can not read the $libdir dir\n";
+  }
+}
+if ($neediconv) {
+  unless ($foundiconv) {
+     print "ERROR: no iconv found in libc and no libiconv found\n";
+     $configok=0;
+  }
+} else {
+  if ($foundiconv) {
+    print "!! WARNING !!: iconv is found in libc but you also have libiconv installed\n";
+    print "               you may need to manualy edit your configure.makeinfo or revert\n";
+    print "               to defining or uncommenting a custom makinfo file in OS.makeinfo.\n"; 
+  }
+}
+if ($lbs) {
+  print "Seting boost serialisation lib to $lbs\n";
+  print MAKEINFO "BOOST_SERIALIZATION_LIB=$lbs\n";
+} else {
+  print "ERROR: No boost serialisation lib found\n";
+  $configok=0;
+}
+if ($lbsregex) {
+  print "Seting boost regex lib to $lbsregex\n";
+  print MAKEINFO "BOOST_REGEX_LIB=$lbsregex\n";
+} else {
+  print "ERROR: No boost regex lib found\n";
+  $configok=0;
+}
+$newboost=0;
+$boostinc="";
+foreach $incdir ("/usr/include","/usr/local/include") {
+  opendir(INCDIR,$incdir);
+  @files=readdir(INCDIR);
+  closedir(INCDIR);
+  foreach $subdir (@files) {
+    if (-f "${incdir}/${subdir}/boost/regex.hpp") {
+       if ($boostinc) {
+          print "ERR: double instalation of boost ${incdir}/$subdir $boostinc\n";
+       } else {
+         $boostinc="${incdir}/$subdir";
+       }
+    }
+  }
+}
+unless ($boostinc) {
+  print "ERROR: No boost/regex.hpp header found for boost regular expressions lib\n";
+  $configok=0;
+  $boostinc=".";
+} else {
+  print "boost regex files located at $boostinc\n";
+}
+$aceinc="";
+foreach $incdir ("/usr/include","/usr/local/include",$ENV{"ACE_ROOT"}) {
+  opendir(INCDIR,$incdir);
+  @files=readdir(INCDIR);
+  closedir(INCDIR);
+  foreach $subdir (@files) {
+    if (-f "${incdir}/${subdir}/ACE.h") {
+       if ($aceinc) {
+          print "ERR: double instalation of boost ${incdir}/$subdir $boostinc\n";
+       } else {
+         $aceinc="${incdir}/$subdir";
+       }
+    }
+  }
+}
+unless ($aceinc) {
+  print "ERROR: No ace/ACE.h header found for ACE communication framework lib\n";
+  $configok=0;
+  $aceinc=".";
+} else {
+  print "ACE library located at $aceinc\n";
+}
+print MAKEINFO "BOOSTINCDIR=$boostinc\n";
+#FIXME !!!
+print MAKEINFO "ACEINCDIR=$aceinc\n";
+if ($lbsreal =~ /(\d)_(\d+)/) {
+  if ($1 > 1) {
+    $newboost=1;
+  } 
+  if (($1 == 1) && ($2 > 32)) {
+    $newboost=1;
+  }
+} else {
+  print "!! WARNING !! : Unable to determine boost version, assuming >= 1.33\n";
+  $newboost=1;
+}
+open(CONFHPP,">inc/message/boostconf.hpp");
+print CONFHPP "#ifndef BOOSTCONF_HPP\n";
+print CONFHPP "#define BOOSTCONF_HPP\n";
+unless ($newboost) {
+  print CONFHPP "// ";
+}
+print CONFHPP "#define OCFA_NEWBOOST_1_33\n";
+print CONFHPP "#endif\n";
+close(CONFHPP);
+closedir(LIB);
+if ($needlibiconv) {
+  print MAKEINFO "LICONV_IF_NEEDED=-liconv\n";
+  print "iconv library is required\n";
+} else {
+  print "iconv is part of libc\n";
+}
+foreach $dir ("/usr/include/pgsql","/usr/local/pgsql/include","/usr/include/postgresql") {
+  if (-d $dir) {
+     print "Adding $dir to includes\n";
+     print MAKEINFO "INCPQDIR=-I$dir\n";
+     $pqdir=$dir;
+  }
+}
+foreach $dir ("/usr/local/pgsql/lib$libarch") {
+  if (-d $dir) {
+     print "Adding $dir as path for qp libraries\n";
+     print MAKEINFO "LIBPQDIR=-L$dir\n";
+  }
+}
+if ($configok) {
+  $configok=0;
+  foreach $dir ("/bin","/sbin","/usr/bin","/usr/sbin","/usr/local/bin","/usr/local/sbin") {
+    if (-f "$dir/libtool") {
+       print "Found libtool\n";
+       $configok=1;
+    } 
+  }
+  if (!$configok) {
+    print "ERR: The required libtool program is not found\n";
+  }
+}
+print "Checking for required header files\n";
+foreach $header ("openssl/evp.h","xercesc/dom/DOMImplementation.hpp","ace/Reactor.h","libpq-fe.h") {
+  if ($configok) {
+    $configok=0;
+    foreach $dir ("/usr/include","/usr/local/include","$pqdir") {
+       if (-f "$dir/$header") {
+         print "Found $header header file\n"; 
+         $configok=1;
+       }
+    }
+    if (!$configok) {
+      print "ERR: The required header file $header was not found\n";
+    }
+  }
+}
+
+if ($configok) {
+  print MAKEINFO "CONF_OK= true\n";
+} else {
+  print MAKEINFO "CONF_OK= \n";
+}
+close(MAKEINFO);

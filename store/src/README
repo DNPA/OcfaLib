@@ -1,0 +1,19 @@
+
+The store still needs a Makefile. However, you sould be able to build some tests
+from the command line.
+
+I assume that ocfamisc is located in /usr/lib/ocfa0.5 which you should have after
+'make install' in some of the higher directories.
+
+Small script to build some of the files.
+
+#!/bin/bash
+
+cd /home/oscar/OcfaLib/store/src/
+g++ -rdynamic AbstractRepository.cpp SimpleRepository.cpp EvidenceStoreEntity.cpp StoreEntity.cpp MsgStoreEntity.cpp MetaStoreEntity.cpp testStore.cpp -I../inc -I../../inc -L/usr/lib/ocfa0.5 -locfamisc -liconv -o SimpleRepository
+
+
+To build de shared objects use;
+
+g++ -shared PgRepository.cpp -I../inc -I../../inc -lpq -o PgRepository.so
+

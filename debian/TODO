@@ -1,0 +1,2 @@
+* Figure out what to do with the syslog install stuff.
+* Have a good look at the dependencies and the versions of our real dependencies, to make sure our build and target system share the same versions of essential dependencies.

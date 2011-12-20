@@ -1,0 +1,19 @@
+26c26
+< 
+---
+> OBJFILESCPTSKLIB=$(BUILDDIR)/FlsDir.lo $(BUILDDIR)/IcatCpFile.lo $(BUILDDIR)/IcatCpSlack.lo $(BUILDDIR)/IlsDir.lo $(BUILDDIR)/TskCpFileSystem.lo $(BUILDDIR)/TskCpTopNode.lo
+37c37
+< all: lib$(PROJECT) basic unix encaseexport
+---
+> all: lib$(PROJECT) basic unix encaseexport cpsleuthkit
+50a51,53
+> cpsleuthkit: $(OBJFILESCPTSKLIB)
+> 	$(LIBTOOL) --mode=link $(CPP) ${LIBS} -rpath $(INSTALLIB) -release $(RELEASE) $(LTLINKFLAGS) -o $(BUILDDIR)/libCpSleuthkit.la $(OBJFILESCPTSKLIB) $(MISCLIB) ${INCFLAGS}
+> 
+59,60c62,64
+< 	$(LIBTOOL) --mode=install cp $(BUILDDIR)/libEncaseExport.la $(INSTALLIB)
+< 	$(LIBTOOL) --mode=install cp $(BUILDDIR)/libUnixFileSystem.la $(INSTALLIB)
+---
+> 	$(LIBTOOL) --mode=install cp $(BUILDDIR)/libEncaseExport.la      $(INSTALLIB)
+> 	$(LIBTOOL) --mode=install cp $(BUILDDIR)/libUnixFileSystem.la    $(INSTALLIB)
+> 	$(LIBTOOL) --mode=install cp $(BUILDDIR)/libCpSleuthkit.la       $(INSTALLIB)

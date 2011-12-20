@@ -1,0 +1,6 @@
+Package: libocfafs
+Version: 2.3.0
+Architecture: amd64
+Depends: libocfatreegraph
+Maintainer: Klpd <ocfa@dnpa.nl>
+Description: The Open computer forensics architecture base filesystem access library. 

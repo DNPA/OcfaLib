@@ -1,0 +1,1163 @@
+17c17
+< 						
+---
+> 
+35c35,36
+< using namespace ocfa::misc;
+---
+> using namespace
+>   ocfa::misc;
+45a47
+> using ocfa::store::carvpath;
+52c54,58
+< namespace ocfa{
+---
+> namespace ocfa
+> {
+> 
+>   namespace module
+>   {
+54,55d59
+<   namespace module {
+<     
+65,74c69,76
+<      */  
+<     EvidenceTreeWalker::EvidenceTreeWalker(OcfaModule *inModule, ModuleInstance *inRouter, 
+< 					   string inInitPath, bool inShouldDelete, string charset):
+< 	    OcfaObject("EvidenceTreeWalker", "module"),
+< 	    module(inModule),
+< 	    router(inRouter),
+< 	    mShouldDelete(inShouldDelete),
+< 	    mCanLink(false),
+< 	    mLinkType(ocfa::store::soft),
+< 	    ncount(TREEWALK_NODE_INTERRUPTION_COUNT) 
+---
+>      */
+>   EvidenceTreeWalker::EvidenceTreeWalker (OcfaModule * inModule, ModuleInstance * inRouter, string inInitPath, bool inShouldDelete, string charset):
+>     OcfaObject ("EvidenceTreeWalker", "module"),
+>       module (inModule),
+>       router (inRouter),
+>       mShouldDelete (inShouldDelete),
+>       mCanLink (false),
+>       mLinkType (ocfa::store::soft), ncount (TREEWALK_NODE_INTERRUPTION_COUNT)
+76,83c78,94
+<       if (module == 0){
+< 	throw OcfaException("No OcfaModule given", this); 
+<       }
+<       ocfaLog(LOG_NOTICE, string("calling select and init with path ") + inInitPath + " and charset " + charset);
+<       if (! FileSystemSelector::selectAndInit(inInitPath, charset)){
+< 
+< 	ocfaLog(LOG_ERR, "Cannot understand the charset");
+< 	if (charset == "AUTO"){
+---
+>       if (module == 0)
+> 	{
+> 	  throw OcfaException ("No OcfaModule given", this);
+> 	}
+>       ocfaLog (LOG_NOTICE,
+> 	       string ("calling select and init with path ") + inInitPath +
+> 	       " and charset " + charset);
+>       if (!FileSystemSelector::selectAndInit (inInitPath, charset))
+> 	{
+> 
+> 	  ocfaLog (LOG_ERR, "Cannot understand the charset");
+> 	  if (charset == "AUTO")
+> 	    {
+> 
+> 	      getLogStream (LOG_ERR) <<
+> 		"We cannot determine charset automagically for path " <<
+> 		inInitPath << endl;
+85,86c96,97
+< 	  getLogStream(LOG_ERR) << "We cannot determine charset automagically for path " 
+< 				  << inInitPath << endl;
+---
+> 	    }
+> 	  throw OcfaException ("Cannot understand charset", this);
+89c100
+< 	throw OcfaException("Cannot understand charset", this);
+---
+>       ocfaLog (LOG_DEBUG, "select and init executed");
+91,92c102
+<       }
+<       ocfaLog(LOG_DEBUG, "select and init executed");
+---
+>       FileSystemSelector::baptize (inModule->getName ());
+94,95d103
+<       FileSystemSelector::baptize(inModule->getName());
+<       
+97,113c105,182
+<       ocfaLog(LOG_DEBUG, string("root is") +   AbstractRepository::Instance()->getRoot());
+<       if (FileSystemSelector::checkIfSameDevice(AbstractRepository::Instance()->getRoot(), inInitPath)){	
+< 	ocfaLog(LOG_INFO, "We are on same device ");
+< 	mCanLink = true;
+< 	mLinkType = hard;
+<       }
+<       // otherwise, if we are working on a readonly filesystem that
+<       // will not disappear from the system (staticmount), we can softlink to 
+<       // improve speed.
+<       else if (!mShouldDelete && FileSystemSelector::getFileSystem()->isReadOnly() 
+< 	       && OcfaConfig::Instance()->getValue("staticmounts") == "true"){
+< 	
+< 	ocfaLog(LOG_INFO, "We are working on a readonly static mounted system");
+< 	mCanLink = true;
+< 	mLinkType = soft;
+<       }
+<       
+---
+>       ocfaLog (LOG_DEBUG,
+> 	       string ("root is") +
+> 	       AbstractRepository::Instance ()->getRoot ());
+>       bool
+> 	rjmcode = true;
+>       if (rjmcode)
+> 	{
+>            if (inShouldDelete) {
+>               if (FileSystemSelector::getFileSystem()->isReadOnly()) {
+>                   throw OcfaException ("Cannot create a deleting treewalker for a read only filesytem.", this);
+>               } else {
+>                   if (FileSystemSelector::checkIfSameDevice (AbstractRepository::Instance ()->getRoot (),
+>                                  inInitPath)) {
+>                        mLinkType = hard;
+>                        mCanLink = true;
+>                        getLogStream (LOG_ERR) << "Running in hardlink mode for rw data on same device as repository\n"; 
+>                   }
+>                   getLogStream (LOG_ERR) << "Running with ShouldDelete , not same fs, so disabling linking\n";
+>                   //otherwise copy instead of link
+>               }
+>            }
+>            else {
+>               if (FileSystemSelector::getFileSystem()->isReadOnly()) {
+>                  if (OcfaConfig::Instance ()->getValue ("staticmounts") == "true") {
+>                      mLinkType = soft;
+>                      mCanLink = true;
+>                      getLogStream (LOG_ERR) << "Running in softlink mode with static mounts\n";
+>                  } else {
+>                      if (FileSystemSelector::checkIfSameDevice (AbstractRepository::Instance ()->getRoot (),
+>                                  inInitPath)) {
+>                         throw OcfaException ("Cannot create treewalker that requires copy to ro filesystem.", this);
+>                      }
+>                      getLogStream (LOG_ERR) << "Running on read only filesystem without static mounts, no linkage\n";
+>                      //otherwise copy instead of link
+>                  }  
+>               } else {
+>                  //If we are running on a rw mounted filesystem and should not delete, the config should
+>                  //state explicitly how to interpret our mode of operation. This is done out of compatibility
+>                  //with the 2.0 bug that allowed to kickstart from wr mounted filesystems that proofed usefull
+>                  //for testing purposes.
+>                  string rwmounts=OcfaConfig::Instance()->getValue("rwmounts");
+>                  if (rwmounts == "carvpath") { 
+>                    mLinkType = carvpath;
+>                    mCanLink = true;
+>                    getLogStream (LOG_ERR) << "Running in carvpath mode \n";
+>                  } else if  (rwmounts != "testrun") {
+>                    throw OcfaException ("Can not create a non deleting treewalker for a rw mounted filesystem without rwmounts being specified as either carvpath or testrun."); 
+>                  }
+>                  ocfaLog (LOG_ERR, "Running non deleting treewalker on rw mounted filesystem. Timestamps should not be trusted.");
+>               }
+>            }
+> 	}
+>       else
+> 	{
+> 	  if (FileSystemSelector::
+> 	      checkIfSameDevice (AbstractRepository::Instance ()->getRoot (),
+> 				 inInitPath))
+> 	    {
+> 	      ocfaLog (LOG_INFO, "We are on same device ");
+> 	      mCanLink = true;
+> 	      mLinkType = hard;
+> 	    }
+> 	  // otherwise, if we are working on a readonly filesystem that
+> 	  // will not disappear from the system (staticmount), we can softlink to 
+> 	  // improve speed.
+> 	  else if (!mShouldDelete
+> 		   && FileSystemSelector::getFileSystem ()->isReadOnly ()
+> 		   && OcfaConfig::Instance ()->getValue ("staticmounts") ==
+> 		   "true")
+> 	    {
+> 
+> 	      ocfaLog (LOG_INFO,
+> 		       "We are working on a readonly static mounted system");
+> 	      mCanLink = true;
+> 	      mLinkType = soft;
+> 	    }
+> 	}
+> 
+115c184
+<     
+---
+> 
+119,155c188,233
+<      EvidenceTreeWalker::EvidenceTreeWalker(OcfaModule *inModule, ModuleInstance *inRouter,
+< 		     std::string fsmodule, bool ismap ,std::map<std::string,std::string> *attributes):
+< 	     OcfaObject("EvidenceTreeWalker", "module"),
+< 	     module(inModule),
+< 	     router(inRouter),
+< 	     mShouldDelete(false),
+< 	     mCanLink(false),
+< 	     mLinkType(ocfa::store::soft),
+< 	     ncount(TREEWALK_NODE_INTERRUPTION_COUNT) 
+<      {
+<       if (module == 0){
+< 	
+< 	throw OcfaException("No OcfaModule given", this); 
+<       }
+<       ocfaLog(LOG_NOTICE, string("calling select and init for module ") + fsmodule);
+<       FileSystemSelector::selectAndInit(fsmodule,attributes);
+<       ocfaLog(LOG_DEBUG, "select and init executed");
+< 
+<       FileSystemSelector::baptize(inModule->getName());
+<       if (ismap) {  
+<         ocfaLog(LOG_DEBUG, string("root is") +   AbstractRepository::Instance()->getRoot());
+< 	  
+<         if (FileSystemSelector::checkIfSameDevice(AbstractRepository::Instance()->getRoot(), (*attributes)[string("mountpoint")])){
+< 	  ocfaLog(LOG_INFO, "We are on same device ");
+< 	  mCanLink = true;
+< 	  mLinkType = hard;
+<         }
+<         // otherwise, if we are working on a readonly filesystem that
+<         // will not disappear from the system (staticmount), we can softlink to 
+<         // improve speed.
+<         else if (OcfaConfig::Instance()->getValue("staticmounts") == "true"){
+< 	  ocfaLog(LOG_INFO, "We are working on a readonly static mounted system");
+< 	  mCanLink = true;
+< 	  mLinkType = soft;
+<         }
+<       }
+<      }
+---
+>   EvidenceTreeWalker::EvidenceTreeWalker (OcfaModule * inModule, ModuleInstance * inRouter, std::string fsmodule, bool ismap, std::map < std::string, std::string > *attributes):
+>     OcfaObject ("EvidenceTreeWalker", "module"),
+>       module (inModule),
+>       router (inRouter),
+>       mShouldDelete (false),
+>       mCanLink (false),
+>       mLinkType (ocfa::store::soft), ncount (TREEWALK_NODE_INTERRUPTION_COUNT)
+>     {
+>       if (module == 0)
+> 	{
+> 
+> 	  throw OcfaException ("No OcfaModule given", this);
+> 	}
+>       ocfaLog (LOG_NOTICE,
+> 	       string ("calling select and init for module ") + fsmodule);
+>       FileSystemSelector::selectAndInit (fsmodule, attributes);
+>       ocfaLog (LOG_DEBUG, "select and init executed");
+> 
+>       FileSystemSelector::baptize (inModule->getName ());
+>       if (ismap)
+> 	{
+> 	  ocfaLog (LOG_DEBUG,
+> 		   string ("root is") +
+> 		   AbstractRepository::Instance ()->getRoot ());
+> 
+> 	  if (FileSystemSelector::
+> 	      checkIfSameDevice (AbstractRepository::Instance ()->getRoot (),
+> 				 (*attributes)[string ("mountpoint")]))
+> 	    {
+> 	      ocfaLog (LOG_INFO, "We are on same device ");
+> 	      mCanLink = true;
+> 	      mLinkType = hard;
+> 	    }
+> 	  // otherwise, if we are working on a readonly filesystem that
+> 	  // will not disappear from the system (staticmount), we can softlink to 
+> 	  // improve speed.
+> 	  else if (OcfaConfig::Instance ()->getValue ("staticmounts") ==
+> 		   "true")
+> 	    {
+> 	      ocfaLog (LOG_INFO,
+> 		       "We are working on a readonly static mounted system");
+> 	      mCanLink = true;
+> 	      mLinkType = soft;
+> 	    }
+> 	}
+>     }
+162,171c240,246
+<      */ 
+<     void EvidenceTreeWalker::processPath(Evidence *parentEvidence, string &inPath, 
+< 					 const string inParentChildRelation, Scalar* inEvidenceName){
+<       
+<       FsConnectedNode *node =0;
+<       FsFileSystem *fileSystem = FileSystemSelector::getFileSystem();
+<       ocfaLog(LOG_DEBUG, string("path=") + inPath); 
+<       fileSystem->getConnectedNode(inPath, &node);
+<       ocfaLog(LOG_DEBUG, string("node=") + node->getName()); 
+<       if (mShouldDelete){
+---
+>      */
+>     void
+>     EvidenceTreeWalker::processPath (Evidence * parentEvidence,
+> 				     string & inPath,
+> 				     const string inParentChildRelation,
+> 				     Scalar * inEvidenceName)
+>     {
+173,176c248,264
+< 	ocfaLog(LOG_INFO, string("setting unlink for destruct to ") + node->getName());
+< 	node->unlinkOnDestruct();
+<       }
+<       processNode(parentEvidence, node, inParentChildRelation, inEvidenceName);
+---
+>       FsConnectedNode *
+> 	node = 0;
+>       FsFileSystem *
+> 	fileSystem = FileSystemSelector::getFileSystem ();
+>       ocfaLog (LOG_DEBUG, string ("path=") + inPath);
+>       fileSystem->getConnectedNode (inPath, &node);
+>       ocfaLog (LOG_DEBUG, string ("node=") + node->getName ());
+>       if (mShouldDelete)
+> 	{
+> 
+> 	  ocfaLog (LOG_INFO,
+> 		   string ("setting unlink for destruct to ") +
+> 		   node->getName ());
+> 	  node->unlinkOnDestruct ();
+> 	}
+>       processNode (parentEvidence, node, inParentChildRelation,
+> 		   inEvidenceName);
+187,189c275,282
+<     void EvidenceTreeWalker::processNode(Evidence *parentEvidence,  FsEntity *inEntity, 
+< 					 const string parentChildRelation, Scalar *inEvidenceName){
+<       getLogStream(LOG_DEBUG) << "processNode: parent is " << parentEvidence << endl;
+---
+>     void
+>     EvidenceTreeWalker::processNode (Evidence * parentEvidence,
+> 				     FsEntity * inEntity,
+> 				     const string parentChildRelation,
+> 				     Scalar * inEvidenceName)
+>     {
+>       getLogStream (LOG_DEBUG) << "processNode: parent is " << parentEvidence
+> 	<< endl;
+191,193c284,301
+<       if (ncount == 0) {
+< 	      event::EventDispatcher::Instance()->processInterruptions();
+< 	      ncount=TREEWALK_NODE_INTERRUPTION_COUNT;
+---
+>       if (ncount == 0)
+> 	{
+> 	  event::EventDispatcher::Instance ()->processInterruptions ();
+> 	  ncount = TREEWALK_NODE_INTERRUPTION_COUNT;
+> 	}
+>       Evidence *
+> 	newEvidence = 0;
+>       newEvidence =
+> 	createEvidenceFromFsEntity (parentEvidence, inEntity,
+> 				    parentChildRelation, inEvidenceName);
+> 
+>       try
+>       {
+> 	if (inEntity->hasSubEntities ())
+> 	  {
+> 
+> 	    processSubEntities (newEvidence, inEntity);
+> 	  }
+195,211c303,315
+<       Evidence *newEvidence = 0;
+<       newEvidence = 
+< 	createEvidenceFromFsEntity(parentEvidence, inEntity, parentChildRelation, inEvidenceName);
+< 
+<       try {
+< 	if (inEntity->hasSubEntities()){
+< 	  
+< 	  processSubEntities(newEvidence, inEntity);
+< 	}
+<       } catch (OcfaException &e){ 
+< 	e.logWhat();
+< 	if (OcfaConfig::Instance()->getValue("failfatal")!= string("false")) {
+< 		          throw OcfaException("OcfaException in processNode",this);
+< 	}
+< 	getLogStream(LOG_ERR) << "exception occurred while process subentities of " 
+< 			      << newEvidence->getEvidencePath().asASCII() << endl;
+< 	newEvidence->getActiveJob()->addLogLine(LOG_ERR, "Exception occurret while process subentities");
+---
+>       catch (OcfaException & e)
+>       {
+> 	e.logWhat ();
+> 	if (OcfaConfig::Instance ()->getValue ("failfatal") !=
+> 	    string ("false"))
+> 	  {
+> 	    throw OcfaException ("OcfaException in processNode", this);
+> 	  }
+> 	getLogStream (LOG_ERR) <<
+> 	  "exception occurred while process subentities of " << newEvidence->
+> 	  getEvidencePath ().asASCII () << endl;
+> 	newEvidence->getActiveJob ()->addLogLine (LOG_ERR,
+> 						  "Exception occurret while process subentities");
+213c317
+<       ocfaLog(LOG_DEBUG, "closing active job");
+---
+>       ocfaLog (LOG_DEBUG, "closing active job");
+215,217c319,321
+<       newEvidence->getActiveJob()->close();
+<       ocfaLog(LOG_DEBUG, "submitting evidence");      
+<       module->submitEvidence(newEvidence, router);
+---
+>       newEvidence->getActiveJob ()->close ();
+>       ocfaLog (LOG_DEBUG, "submitting evidence");
+>       module->submitEvidence (newEvidence, router);
+220d323
+<   
+222,233c325,346
+<     void EvidenceTreeWalker::processSubEntities(Evidence *inEvidence, FsEntity *inEntity){
+<       
+<       try {
+<       inEntity->resetSubEntityIterator();
+<       
+<       } catch (OcfaException &e){
+<         e.logWhat();
+< 	if (OcfaConfig::Instance()->getValue("failfatal")!= string("false")) {
+< 		          throw OcfaException("OcfaException in processSubEntities",this);
+< 	}    
+< 	getLogStream(LOG_ERR) << "cannot reset Subentity from " << inEvidence->getEvidencePath().asASCII() << endl;
+< 	inEvidence->getActiveJob()->addLogLine(LOG_ERR, "cannot reset subentity");
+---
+> 
+>     void
+>     EvidenceTreeWalker::processSubEntities (Evidence * inEvidence,
+> 					    FsEntity * inEntity)
+>     {
+> 
+>       try
+>       {
+> 	inEntity->resetSubEntityIterator ();
+> 
+>       } catch (OcfaException & e)
+>       {
+> 	e.logWhat ();
+> 	if (OcfaConfig::Instance ()->getValue ("failfatal") !=
+> 	    string ("false"))
+> 	  {
+> 	    throw OcfaException ("OcfaException in processSubEntities", this);
+> 	  }
+> 	getLogStream (LOG_ERR) << "cannot reset Subentity from " <<
+> 	  inEvidence->getEvidencePath ().asASCII () << endl;
+> 	inEvidence->getActiveJob ()->addLogLine (LOG_ERR,
+> 						 "cannot reset subentity");
+236,260c349,391
+<       do {
+< 	
+< 	FsEntity *subFsEntity = 0;
+< 	inEntity->getCurrentSubEntity(&subFsEntity);
+< 	ocfaLog(LOG_DEBUG, string("processing ") + subFsEntity->getName()); 
+< 	if (mShouldDelete){
+< 	  
+< 	  ocfaLog(LOG_DEBUG, string("unlinkonDestruct ") + subFsEntity->getName()); 
+< 	  subFsEntity->unlinkOnDestruct();
+< 	}
+< 	try {
+< 	  processNode(inEvidence, subFsEntity, inEntity->getCurrentSubEntityRelation());	
+< 	
+< 	} catch(OcfaException &e){
+<           e.logWhat();
+< 	  if (OcfaConfig::Instance()->getValue("failfatal")!= string("false")) {
+< 		            throw OcfaException("OcfaException in processSubEntities",this);
+<           }
+< 	  getLogStream(LOG_ERR) << "Cannot create evidence from " << subFsEntity->getName()
+< 				<< "parent: " << inEvidence->getEvidencePath().asASCII() << endl;
+< 	  inEvidence->getActiveJob()->addLogLine(LOG_ERR, "cannot create evidence from " + subFsEntity->getName());
+< 	}
+< 	delete subFsEntity;
+< 	
+<       } while (inEntity->nextSubEntity());
+---
+>       do
+> 	{
+> 
+> 	  FsEntity *
+> 	    subFsEntity = 0;
+> 	  inEntity->getCurrentSubEntity (&subFsEntity);
+> 	  ocfaLog (LOG_DEBUG,
+> 		   string ("processing ") + subFsEntity->getName ());
+> 	  if (mShouldDelete)
+> 	    {
+> 
+> 	      ocfaLog (LOG_DEBUG,
+> 		       string ("unlinkonDestruct ") +
+> 		       subFsEntity->getName ());
+> 	      subFsEntity->unlinkOnDestruct ();
+> 	    }
+> 	  try
+> 	  {
+> 	    processNode (inEvidence, subFsEntity,
+> 			 inEntity->getCurrentSubEntityRelation ());
+> 
+> 	  }
+> 	  catch (OcfaException & e)
+> 	  {
+> 	    e.logWhat ();
+> 	    if (OcfaConfig::Instance ()->getValue ("failfatal") !=
+> 		string ("false"))
+> 	      {
+> 		throw
+> 		  OcfaException ("OcfaException in processSubEntities", this);
+> 	      }
+> 	    getLogStream (LOG_ERR) << "Cannot create evidence from " <<
+> 	      subFsEntity->getName () << "parent: " << inEvidence->
+> 	      getEvidencePath ().asASCII () << endl;
+> 	    inEvidence->getActiveJob ()->addLogLine (LOG_ERR,
+> 						     "cannot create evidence from "
+> 						     +
+> 						     subFsEntity->getName ());
+> 	  }
+> 	  delete subFsEntity;
+> 
+> 	}
+>       while (inEntity->nextSubEntity ());
+262,263d392
+<     
+<       
+265,266c394,397
+< 						
+<     
+---
+> 
+> 
+> 
+> 
+274,292c405,413
+<     Evidence *EvidenceTreeWalker::createEvidenceFromFsEntity(Evidence *inParentEvidence, 
+< 							     FsEntity *inFsEntity,
+< 							     const string relation, 
+< 							     Scalar *inEvidenceName, 
+< 							     vector<CoParent > *inCoParents){
+< 
+<       getLogStream(LOG_DEBUG) << "createEvidenceFromFsEntity: parent is " 
+< 			      << inParentEvidence << endl;
+<       
+<       Evidence *newEvidence = 0;
+<       EvidenceStoreEntity *storeEntity = 0;
+<       
+<       storeEntity = createStoreEntityFromFsEntity(inFsEntity);
+<       map< string, misc::MetaValue *> *metaMap = 0;
+<       inFsEntity->takeMetaMap(&metaMap);
+<       getLogStream(LOG_DEBUG) << "createEvidenceStoreEntity metamap is " << metaMap << endl; 
+<       OcfaHandle *storeHandle;
+<       DigestPair *digestPair;
+<       if (storeEntity == 0){
+---
+>     Evidence *
+>     EvidenceTreeWalker::createEvidenceFromFsEntity (Evidence *
+> 						    inParentEvidence,
+> 						    FsEntity * inFsEntity,
+> 						    const string relation,
+> 						    Scalar * inEvidenceName,
+> 						    vector < CoParent >
+> 						    *inCoParents)
+>     {
+294,301c415,416
+< 	storeHandle = 0;
+< 	digestPair = 0;
+<       }
+<       else {
+< 	
+< 	storeHandle = new OcfaHandle(storeEntity->getHandle());      
+< 	digestPair = storeEntity->getDigestPair();
+<       }
+---
+>       getLogStream (LOG_DEBUG) << "createEvidenceFromFsEntity: parent is "
+> 	<< inParentEvidence << endl;
+303,316c418,433
+<       Scalar scalar(string(""), string(""));
+<       if (inEvidenceName == 0){
+<       
+< 	getLogStream(LOG_DEBUG) << "creating name using charset " << FileSystemSelector::getFileSystem()->getCharset() << endl;
+< 	scalar = Scalar(inFsEntity->getName(), FileSystemSelector::getFileSystem()->getCharset());
+<       }
+<       else {
+< 	scalar = *inEvidenceName;
+<       }
+<       EvidenceFactory::Instance()->createEvidence(&newEvidence, &storeHandle, 
+< 						  digestPair, 
+< 						  scalar, &metaMap,
+< 						  inParentEvidence, relation, inCoParents);
+<       if (storeEntity != 0){
+---
+>       Evidence *
+> 	newEvidence = 0;
+>       EvidenceStoreEntity *
+> 	storeEntity = 0;
+> 
+>       storeEntity = createStoreEntityFromFsEntity (inFsEntity);
+>       map < string, misc::MetaValue * >*metaMap = 0;
+>       inFsEntity->takeMetaMap (&metaMap);
+>       getLogStream (LOG_DEBUG) << "createEvidenceStoreEntity metamap is " <<
+> 	metaMap << endl;
+>       OcfaHandle *
+> 	storeHandle;
+>       DigestPair *
+> 	digestPair;
+>       if (storeEntity == 0)
+> 	{
+318,319c435,468
+< 	delete storeEntity;
+<       }
+---
+> 	  storeHandle = 0;
+> 	  digestPair = 0;
+> 	}
+>       else
+> 	{
+> 
+> 	  storeHandle = new OcfaHandle (storeEntity->getHandle ());
+> 	  digestPair = storeEntity->getDigestPair ();
+> 	}
+> 
+>       Scalar scalar (string (""), string (""));
+>       if (inEvidenceName == 0)
+> 	{
+> 
+> 	  getLogStream (LOG_DEBUG) << "creating name using charset " <<
+> 	    FileSystemSelector::getFileSystem ()->getCharset () << endl;
+> 	  scalar =
+> 	    Scalar (inFsEntity->getName (),
+> 		    FileSystemSelector::getFileSystem ()->getCharset ());
+> 	}
+>       else
+> 	{
+> 	  scalar = *inEvidenceName;
+> 	}
+>       EvidenceFactory::Instance ()->createEvidence (&newEvidence,
+> 						    &storeHandle, digestPair,
+> 						    scalar, &metaMap,
+> 						    inParentEvidence,
+> 						    relation, inCoParents);
+>       if (storeEntity != 0)
+> 	{
+> 
+> 	  delete storeEntity;
+> 	}
+325,337c474,495
+<     ocfa::evidence::Evidence *EvidenceTreeWalker::createEvidenceFromFsEntity(ocfa::misc::Item *inParentItem, 
+< 								 ocfa::fs::FsEntity *inFsEntity,
+< 								 Scalar *inEvidenceName){
+<       Evidence *newEvidence = 0;
+<       EvidenceStoreEntity *storeEntity = 0;
+<       
+<       storeEntity = createStoreEntityFromFsEntity(inFsEntity);
+<       map< string, misc::MetaValue *> *metaMap;
+<       inFsEntity->takeMetaMap(&metaMap);
+<      
+<       OcfaHandle *storeHandle;
+<       DigestPair *digestPair;
+<       if (storeEntity == 0){
+---
+>     ocfa::evidence::Evidence *
+>       EvidenceTreeWalker::createEvidenceFromFsEntity (ocfa::misc::Item *
+> 						      inParentItem,
+> 						      ocfa::fs::FsEntity *
+> 						      inFsEntity,
+> 						      Scalar * inEvidenceName)
+>     {
+>       Evidence *
+> 	newEvidence = 0;
+>       EvidenceStoreEntity *
+> 	storeEntity = 0;
+> 
+>       storeEntity = createStoreEntityFromFsEntity (inFsEntity);
+>       map < string, misc::MetaValue * >*metaMap;
+>       inFsEntity->takeMetaMap (&metaMap);
+> 
+>       OcfaHandle *
+> 	storeHandle;
+>       DigestPair *
+> 	digestPair;
+>       if (storeEntity == 0)
+> 	{
+339,346c497,501
+< 	storeHandle = 0;
+< 	digestPair = 0;
+<       }
+<       else {
+< 	
+< 	storeHandle = new OcfaHandle(storeEntity->getHandle());      
+< 	digestPair = storeEntity->getDigestPair();
+<       }
+---
+> 	  storeHandle = 0;
+> 	  digestPair = 0;
+> 	}
+>       else
+> 	{
+348,363c503,505
+<       Scalar scalar(string(""), string(""));
+<       if ((inEvidenceName == 0)||(inEvidenceName->asUTF8() == "")){
+<         getLogStream(LOG_WARNING) << "No valid inEvidenceName, falling back on inFsEntity for name '" << inFsEntity->getName() << "'\n"; 	
+< 	scalar = Scalar(inFsEntity->getName());
+<       }
+<       else {
+< 	scalar = *inEvidenceName;
+<       }
+<       if (scalar.asUTF8() == "") {
+<          throw OcfaException("No valid name found for the top level node",this);
+<       }
+<       EvidenceFactory::Instance()->createEvidence(&newEvidence, &storeHandle, 
+< 						  digestPair, 
+< 						  scalar, &metaMap,
+< 						  inParentItem);
+<       if (storeEntity != 0){
+---
+> 	  storeHandle = new OcfaHandle (storeEntity->getHandle ());
+> 	  digestPair = storeEntity->getDigestPair ();
+> 	}
+365,366c507,533
+< 	delete storeEntity;
+<       }
+---
+>       Scalar scalar (string (""), string (""));
+>       if ((inEvidenceName == 0) || (inEvidenceName->asUTF8 () == ""))
+> 	{
+> 	  getLogStream (LOG_WARNING) <<
+> 	    "No valid inEvidenceName, falling back on inFsEntity for name '"
+> 	    << inFsEntity->getName () << "'\n";
+> 	  scalar = Scalar (inFsEntity->getName ());
+> 	}
+>       else
+> 	{
+> 	  scalar = *inEvidenceName;
+> 	}
+>       if (scalar.asUTF8 () == "")
+> 	{
+> 	  throw
+> 	    OcfaException ("No valid name found for the top level node",
+> 			   this);
+> 	}
+>       EvidenceFactory::Instance ()->createEvidence (&newEvidence,
+> 						    &storeHandle, digestPair,
+> 						    scalar, &metaMap,
+> 						    inParentItem);
+>       if (storeEntity != 0)
+> 	{
+> 
+> 	  delete storeEntity;
+> 	}
+369,370d535
+<       
+<       
+374,392c539,565
+<     
+<     
+<     
+<     EvidenceStoreEntity *EvidenceTreeWalker::createStoreEntityFromFsEntity(FsEntity *inFsEntity){
+<       
+< 	EvidenceStoreEntity *storeEntity = 0;
+< 
+< 	if (inFsEntity->hasContent()){
+< 
+< 	// TODO this test should be improved. We need to have a something like has isRegularFile
+< 	  if ((inFsEntity->getSoftLinkablePath() != "" ) && mCanLink){
+< 	    
+< 	    ocfaLog(LOG_DEBUG, string("linktype is ") + ((mLinkType == soft) ? "soft" : "hard")); 
+< 	    string filePath;
+< 	    switch(mLinkType){
+< 	      
+< 	    case hard:
+< 	      
+< 		  filePath = inFsEntity->getHardLinkablePath();
+---
+> 
+> 
+> 
+> 
+> 
+>     EvidenceStoreEntity *
+>     EvidenceTreeWalker::createStoreEntityFromFsEntity (FsEntity * inFsEntity)
+>     {
+> 
+>       EvidenceStoreEntity *
+> 	storeEntity = 0;
+> 
+>       if (inFsEntity->hasContent ())
+> 	{
+> 	  bool rjmcode = true;
+> 	  if (rjmcode)
+> 	    {
+> 	      //This is new and untested code
+> 	      string
+> 		filepath = "";
+> 	      switch (mLinkType)
+> 		{
+> 		case ocfa::store::hard:
+> 		  getLogStream (LOG_ERR) <<
+> 		    "trying to fetch hardlinkable path" << endl;
+> 		  if (mCanLink)
+> 		    filepath = inFsEntity->getHardLinkablePath ();
+394,407c567,644
+< 	    case soft:
+< 	      filePath = inFsEntity->getSoftLinkablePath();
+< 	      break;
+< 	    default:
+< 	      throw OcfaException("we can link but no linktype is specified", this);
+< 	    }
+< 	    
+< 	    AbstractRepository::Instance()->createEvidenceStoreEntity(&storeEntity, ocfa::store::Filename(filePath), mLinkType);
+< 	  }
+< 	  else {
+< 	    
+< 	    if (! inFsEntity->isReadable()){
+< 	      
+< 	      throw OcfaException("Cannot read from " + inFsEntity->getName(), this);
+---
+> 		case ocfa::store::soft:
+> 		  getLogStream (LOG_ERR) <<
+> 		    "trying to fetch softlinkable path" << endl;
+> 		  if (mCanLink)
+> 		    filepath = inFsEntity->getSoftLinkablePath ();
+> 		  break;
+> 		case ocfa::store::carvpath:
+> 		  getLogStream (LOG_ERR) <<
+> 		    "trying to fetch softlinkable carvpath" << endl;
+> 		  filepath = inFsEntity->getSoftLinkablePath (); 
+>                   if (filepath == "") {
+>                     getLogStream (LOG_ERR) << "trying to fetch hardlinkable carvpath" << endl;
+>                     filepath = inFsEntity->getHardLinkablePath ();
+>                   }
+>                   getLogStream (LOG_ERR) << "checking filepath '" << filepath << "' against carvpath patern" << endl; 
+> 		  if ((filepath.length () < 5)
+> 		      ||
+> 		      (strncmp
+> 		       (filepath.c_str () + filepath.length () - 4, ".crv",
+> 			4))) {
+>                     getLogStream (LOG_ERR) << "Path did not match to carvpath patern " << endl;
+> 		    filepath = "";
+>                   }
+> 		  break;
+> 		}
+> 	      if (filepath != string (""))
+> 		{
+> 		  getLogStream (LOG_ERR) << "retreived path '" << filepath <<
+> 		    "' trying to create store entity from linkable path" << endl;
+> 		  AbstractRepository::Instance ()->
+> 		    createEvidenceStoreEntity (&storeEntity,
+> 					       ocfa::store::
+> 					       Filename (filepath),
+> 					       mLinkType);
+> 		}
+>               else {
+>                  if (mCanLink) {
+>                      getLogStream (LOG_ERR) << "failed to fetch linkable path from filesystem" << endl;
+>                  } else {
+>                      getLogStream (LOG_ERR) << "EvidenceTreeWalker running in non linkable mode: copy-out" << endl;
+>                  }
+>               }
+> 	      if (storeEntity == 0)
+> 		{
+> 		  getLogStream (LOG_ERR) <<
+> 		    "No storeentity from fsentity linkable path, creating by way of copy" <<
+> 		    endl;
+> 		  if (!inFsEntity->isReadable ())
+> 		    {
+> 
+> 		      throw
+> 			OcfaException ("Cannot read from " +
+> 				       inFsEntity->getName (), this);
+> 		    }
+> 		  static char
+> 		    readBuffer[512];
+> 		  // we cannot link therefore we copy.
+> 		  AbstractRepository::Instance ()->
+> 		    createEmptyEvidenceStoreEntity (&storeEntity);
+> 		  inFsEntity->openStream ();
+> 		  storeEntity->openStream ();
+> 		  size_t bytesRead;
+> 		  while ((bytesRead =
+> 			  inFsEntity->streamRead (readBuffer, 512)) > 0)
+> 		    {
+> 
+> 		      storeEntity->writeStream (readBuffer, bytesRead);
+> 		    }
+> 		  inFsEntity->closeStream ();
+> 		  storeEntity->closeStream ();
+> 		  getLogStream (LOG_ERR) << "created store entity true copy"
+> 		    << endl;
+> 		}
+> 	      else
+> 		{
+> 		  getLogStream (LOG_ERR) << "created store entity from link"
+> 		    << endl;
+> 		}
+409,417c646,705
+< 	    static char readBuffer[512]; 
+< 	    // we cannot link therefore we copy.
+< 	    AbstractRepository::Instance()->createEmptyEvidenceStoreEntity(&storeEntity);     
+< 	    inFsEntity->openStream();
+< 	    storeEntity->openStream();
+< 	    size_t bytesRead;
+< 	    while((bytesRead = inFsEntity->streamRead(readBuffer, 512)) > 0){
+< 	      
+< 	      storeEntity->writeStream(readBuffer, bytesRead);
+---
+> 	  else
+> 	    {
+> 	      //This is old and broken code
+> 	      // TODO this test should be improved. We need to have a something like has isRegularFile
+> 	      if ((inFsEntity->getSoftLinkablePath () != "") && mCanLink)
+> 		{
+> 
+> 		  ocfaLog (LOG_DEBUG,
+> 			   string ("linktype is ") +
+> 			   ((mLinkType == soft) ? "soft" : "hard"));
+> 		  string filePath;
+> 		  switch (mLinkType)
+> 		    {
+> 
+> 		    case hard:
+> 
+> 		      filePath = inFsEntity->getHardLinkablePath ();
+> 		      break;
+> 		    case soft:
+> 		      filePath = inFsEntity->getSoftLinkablePath ();
+> 		      break;
+> 		    default:
+> 		      throw
+> 			OcfaException
+> 			("we can link but no linktype is specified", this);
+> 		    }
+> 
+> 		  AbstractRepository::Instance ()->
+> 		    createEvidenceStoreEntity (&storeEntity,
+> 					       ocfa::store::
+> 					       Filename (filePath),
+> 					       mLinkType);
+> 		}
+> 	      else
+> 		{
+> 
+> 		  if (!inFsEntity->isReadable ())
+> 		    {
+> 
+> 		      throw
+> 			OcfaException ("Cannot read from " +
+> 				       inFsEntity->getName (), this);
+> 		    }
+> 		  static char
+> 		    readBuffer[512];
+> 		  // we cannot link therefore we copy.
+> 		  AbstractRepository::Instance ()->
+> 		    createEmptyEvidenceStoreEntity (&storeEntity);
+> 		  inFsEntity->openStream ();
+> 		  storeEntity->openStream ();
+> 		  size_t bytesRead;
+> 		  while ((bytesRead =
+> 			  inFsEntity->streamRead (readBuffer, 512)) > 0)
+> 		    {
+> 
+> 		      storeEntity->writeStream (readBuffer, bytesRead);
+> 		    }
+> 		  inFsEntity->closeStream ();
+> 		  storeEntity->closeStream ();
+> 		}
+419,441c707,709
+< 	    inFsEntity->closeStream();
+< 	    storeEntity->closeStream();	
+< 	  }
+< 	}	
+< 	return storeEntity;	
+<     }    
+< 
+< 
+<     Evidence *EvidenceTreeWalker::createDerivedEvidence(Evidence *inParentEvidence, std::string filePath, 
+< 							ocfa::misc::Scalar evidenceName, 
+< 							std::string parentChildRelationName, 
+< 							std::vector<ocfa::evidence::CoParent > *inCoParents){
+<     
+<       FsConnectedNode *node = 0;
+<       FsFileSystem *fileSystem = FileSystemSelector::getFileSystem();
+<       ocfaLog(LOG_DEBUG, string("filepath=") + filePath); 
+<       fileSystem->getConnectedNode( filePath, &node);
+<       if (mShouldDelete){
+< 	node->unlinkOnDestruct();
+<       }
+<       Evidence *newEvidence  = 
+< 	createEvidenceFromFsEntity(inParentEvidence, node, parentChildRelationName, &evidenceName, inCoParents); 
+<       if (node->hasSubEntities()){
+---
+> 	}
+>       return storeEntity;
+>     }
+443,444c711,743
+< 	processSubEntities(newEvidence, node);
+<       }
+---
+> 
+>     Evidence *
+>     EvidenceTreeWalker::createDerivedEvidence (Evidence * inParentEvidence,
+> 					       std::string filePath,
+> 					       ocfa::misc::
+> 					       Scalar evidenceName,
+> 					       std::
+> 					       string parentChildRelationName,
+> 					       std::vector <
+> 					       ocfa::evidence::CoParent >
+> 					       *inCoParents)
+>     {
+> 
+>       FsConnectedNode *
+> 	node = 0;
+>       FsFileSystem *
+> 	fileSystem = FileSystemSelector::getFileSystem ();
+>       ocfaLog (LOG_DEBUG, string ("filepath=") + filePath);
+>       fileSystem->getConnectedNode (filePath, &node);
+>       if (mShouldDelete)
+> 	{
+> 	  node->unlinkOnDestruct ();
+> 	}
+>       Evidence *
+> 	newEvidence = createEvidenceFromFsEntity (inParentEvidence, node,
+> 						  parentChildRelationName,
+> 						  &evidenceName,
+> 						  inCoParents);
+>       if (node->hasSubEntities ())
+> 	{
+> 
+> 	  processSubEntities (newEvidence, node);
+> 	}
+447,448c746,775
+<     }    
+<   
+---
+>     }
+> 
+> 
+>     Evidence *
+>     EvidenceTreeWalker::createDerivedEvidence (ocfa::Item::Item *
+> 					       inParentItem,
+> 					       std::string filePath,
+> 					       ocfa::misc::
+> 					       Scalar evidenceName)
+>     {
+> 
+> 
+>       FsConnectedNode *
+> 	node = 0;
+>       FsFileSystem *
+> 	fileSystem = FileSystemSelector::getFileSystem ();
+>       ocfaLog (LOG_DEBUG, string ("filepath=") + filePath);
+>       fileSystem->getConnectedNode (filePath, &node);
+>       if (mShouldDelete)
+> 	{
+> 	  node->unlinkOnDestruct ();
+> 	}
+>       Evidence *
+> 	newEvidence =
+> 	createEvidenceFromFsEntity (inParentItem, node, &evidenceName);
+>       if (node->hasSubEntities ())
+> 	{
+> 
+> 	  processSubEntities (newEvidence, node);
+> 	}
+450,467d776
+<     Evidence *EvidenceTreeWalker::createDerivedEvidence(ocfa::Item::Item *inParentItem, std::string filePath, 
+< 					      ocfa::misc::Scalar evidenceName){
+<       
+<       
+<       FsConnectedNode *node = 0;
+<       FsFileSystem *fileSystem = FileSystemSelector::getFileSystem();
+<       ocfaLog(LOG_DEBUG, string("filepath=") + filePath); 
+<       fileSystem->getConnectedNode( filePath, &node);
+<       if (mShouldDelete){
+< 	node->unlinkOnDestruct();
+<       }
+<       Evidence *newEvidence  = 
+< 	createEvidenceFromFsEntity(inParentItem, node, &evidenceName); 
+<       if (node->hasSubEntities()){
+< 	
+< 	processSubEntities(newEvidence, node);
+<       }
+<       
+469c778
+<     }    
+---
+>     }
+471c780,781
+<     bool EvidenceTreeWalker::isEmpty(string inDir){
+---
+>     bool EvidenceTreeWalker::isEmpty (string inDir)
+>     {
+473c783,784
+<       FsConnectedNode *node =0;
+---
+>       FsConnectedNode *
+> 	node = 0;
+475,479c786,791
+<       FsFileSystem *fileSystem = FileSystemSelector::getFileSystem();
+<       ocfaLog(LOG_DEBUG, string("path=") + inDir); 
+<       fileSystem->getConnectedNode(inDir, &node);
+<       ocfaLog(LOG_DEBUG, string("node=") + node->getName()); 
+<       empty = !(node->hasSubEntities());
+---
+>       FsFileSystem *
+> 	fileSystem = FileSystemSelector::getFileSystem ();
+>       ocfaLog (LOG_DEBUG, string ("path=") + inDir);
+>       fileSystem->getConnectedNode (inDir, &node);
+>       ocfaLog (LOG_DEBUG, string ("node=") + node->getName ());
+>       empty = !(node->hasSubEntities ());
+487,513c799,837
+<     void EvidenceTreeWalker::emptyPath(string inPath){
+<       
+<       FsConnectedNode *node =0;
+<       FsFileSystem *fileSystem = FileSystemSelector::getFileSystem();
+<       ocfaLog(LOG_DEBUG, string("path=") + inPath); 
+<       fileSystem->getConnectedNode(inPath, &node);
+<       ocfaLog(LOG_DEBUG, string("node=") + node->getName()); 
+<       if (node->hasSubEntities()){
+< 
+< 	node->resetSubEntityIterator();
+< 	do {
+< 
+< 	  FsEntity *subEntity = 0;
+< 	  node->getCurrentSubEntity(&subEntity);
+< 	  if (!subEntity->isRecursivelyUnlinkable()){
+< 	    
+< 	    getLogStream(LOG_CRIT) << "Cannot remove " << subEntity->getName() << endl;
+< 	    throw OcfaException("Cannot remove workdir", this);
+< 	  }
+< 	  
+< 	  delete subEntity;
+< 	} while (node->nextSubEntity());
+<       }
+<       else {
+< 	
+< 	getLogStream(LOG_ERR) << " EvidenceTreewalker::emptyPath path is already empty" << endl;
+<       }
+---
+>     void
+>     EvidenceTreeWalker::emptyPath (string inPath)
+>     {
+> 
+>       FsConnectedNode *
+> 	node = 0;
+>       FsFileSystem *
+> 	fileSystem = FileSystemSelector::getFileSystem ();
+>       ocfaLog (LOG_DEBUG, string ("path=") + inPath);
+>       fileSystem->getConnectedNode (inPath, &node);
+>       ocfaLog (LOG_DEBUG, string ("node=") + node->getName ());
+>       if (node->hasSubEntities ())
+> 	{
+> 
+> 	  node->resetSubEntityIterator ();
+> 	  do
+> 	    {
+> 
+> 	      FsEntity *
+> 		subEntity = 0;
+> 	      node->getCurrentSubEntity (&subEntity);
+> 	      if (!subEntity->isRecursivelyUnlinkable ())
+> 		{
+> 
+> 		  getLogStream (LOG_CRIT) << "Cannot remove " << subEntity->
+> 		    getName () << endl;
+> 		  throw OcfaException ("Cannot remove workdir", this);
+> 		}
+> 
+> 	      delete subEntity;
+> 	    }
+> 	  while (node->nextSubEntity ());
+> 	}
+>       else
+> 	{
+> 
+> 	  getLogStream (LOG_ERR) <<
+> 	    " EvidenceTreewalker::emptyPath path is already empty" << endl;
+> 	}
+522,524d845
+< 
+< 
+<       

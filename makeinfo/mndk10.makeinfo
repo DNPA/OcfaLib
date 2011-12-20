@@ -1,0 +1,7 @@
+LIBTOOL= libtool
+GCCFLAGS += -DLINUX -D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE -D_LARGEFILE64_SOURCE
+INCPQDIR=-I/usr/include/pgsql
+LICONV_IF_NEEDED= 
+# mandrake 10.1 uses the boost as installed by the source package
+BOOST_LIB=boost_serialization-gcc 
+#-L/usr/local/lib

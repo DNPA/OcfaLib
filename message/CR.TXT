@@ -1,0 +1,28 @@
+Interface:
+
+	../inc/message/AnycastMessageBox.hpp	OK
+	../inc/message/Message.hpp		REVIEWED
+	../inc/message/MessageEvent.hpp		OK
+	../inc/message/MsgMask.hpp		REVIEWED
+	../inc/message/Serialize.hpp		OK
+
+Both:
+
+	../inc/message/MessageBox.hpp           REVIEWED
+
+Implementation:
+
+	CastStrategy				DEFERED: will be reviewed by author first
+	ConcreteMessage				REVIEWED
+	CustomMessageBox			REVIEWED
+	MessagingEndPoint                       REVIEWED	
+	AcceptMessagingEndPoint                 REVIEWED
+	ConnectMessagingEndPoint                REVIEWED
+	MessageWrapper				REVIEWED
+	ModuleAddress				OK
+	OcfaStreamHandler			REVIEWED
+	ReceiveSockHandler			REVIEWED
+	SendSockHandler				REVIEWED
+	StreamContainer				REVIEWED
+
+

@@ -1,0 +1,6 @@
+Package: libocfamessage
+Version: 2.3.0
+Architecture: amd64
+Depends: libocfamisc,libace-dev
+Maintainer: Klpd <ocfa@dnpa.nl>
+Description: The open computer forensics architecture messaging library. 

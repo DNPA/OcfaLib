@@ -1,0 +1,8 @@
+# The folowing section is meant for 'user' facility logging by the open computer forensics architecture.
+source ocfasrc {
+        internal();
+	unix-dgram("/dev/log");
+};
+destination ocfa { file("/var/log/ocfa.conf" perm (0400)); };
+filter f_ocfa { facility(user); };
+log { source(ocfasrc); filter(f_ocfa); destination(ocfa); };

@@ -1,0 +1,617 @@
+#!/usr/bin/perl
+
+# The Open Computer Forensics Library
+# Copyright (C) KLPD 2003..2006  <ocfa@dnpa.nl>
+#
+# This library is free software; you can redistribute it and/or
+# modify it under the terms of the GNU Lesser General Public
+# License as published by the Free Software Foundation; either
+# version 2.1 of the License, or (at your option) any later version.
+#
+# This library is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# Lesser General Public License for more details.
+# You should have received a copy of the GNU Lesser General Public
+# License along with this library; if not, write to the Free Software
+# Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307  USA
+use warnings;
+use strict;
+use diagnostics;
+our $libarch="";
+our $configok=1;
+our $libtool;
+our $pqdir;
+our $distdir;
+our $vardir;
+our $ocfainc;
+our $ocfalib;
+our $RELEASE="undefined-version";
+open VERSIONINFO,"./RELEASE.makeinfo" || die "Can not open ./RELEASE.makeinfo";
+while(<VERSIONINFO>) {
+    print "Processing $_";
+    if (/=\s+(\S+)/) {
+      $RELEASE=$1;
+      print "Found release in RELEASE.makeinfo: $RELEASE\n";
+    } 
+}
+close VERSIONINFO;
+print "RELEASE = $RELEASE\n";
+sub clucenenewinterface {
+  my $result=0;
+  foreach my $searchdir ("/usr/include","/usr/local/include","/usr/lib","/usr/local/lib") {
+     my $headerfile=$searchdir . "/CLucene/clucene-config.h";
+     if (open(HEADERFILE,$headerfile)) {
+        while (<HEADERFILE>) {
+           if (/#define.*_CL_VERSION.*\"(\d+)\.(\d+)\.(\d+)/) {
+              my $version=10000*$1 + 100 * $2 + $3;
+              if ($version >= 914) {
+                 $result = 1;
+                 print "clucene version = $version\n";
+              } elsif ($version > 910) {
+                 print STDERR "WARNING: clucene version $version . Please check your config for CLUCENE_NEW_READER_INTERFACE\n";
+              }
+           }
+        }
+     }
+  }
+  return $result;
+}
+
+sub getgccversion {
+  my $gccversion=4001;
+  my $gccverdata=`g++ --version`;
+  $gccverdata =~ s/\r?\n.*//;
+  $gccversion=4001;  # By default lets asume the 4.0
+  if ($gccverdata =~ /\s+(\d+)\.(\d+)\.\d+\s/) {
+     $gccversion = $1 * 1000 + $2;
+  } else {
+     print "!! WARNING !! : unable to determing g++ version, assuming 4.1 or up\n";
+  }
+  print "gccversion=$gccversion\n";
+  return $gccversion;
+}
+
+sub is_iconv_const {
+  my $consticonv=0;
+  if ((-e "/usr/include/iconv.h") && (-e "/usr/local/include/iconv.h")) {
+    print "!! WARNING !! : Two versions of iconv.h found, possible bad configuration\n";
+    print "                you may need to rename /usr/local/include/iconv.h in order to\n";
+    print "                prefent it from being used\n";
+  }
+  if (open(IH,"/usr/include/iconv.h") ||open(IH,"/usr/local/include/iconv.h") ) {
+    $consticonv=0;
+    while(<IH>) {
+      if (/size_t.*const/) {
+        $consticonv=1;
+      }
+    }
+  } else {
+    print "ERROR: Unable to open /usr/include/iconv.h or /usr/local/include/iconv.h for parsing\n";
+    $configok=0;
+  }
+  close(IH);
+  if ($consticonv) {
+    print "iconv expects to be passed cons char pointers\n";
+  } else {
+    print "iconv expects to be passed non const char pointers\n";
+  }
+  return $consticonv;
+}
+
+sub iconv_lib_needed {
+  my $needlibiconv=1;
+  if (opendir(LIB,"/lib$libarch")) {
+    while(my $file=readdir(LIB)) {
+      if ($file =~ /^libc.so/) {
+        if (open(OBJDUMP,"objdump -T /lib${libarch}/$file|")) {
+         while(<OBJDUMP>) {
+           if (/\siconv$/) {
+              $needlibiconv=0;
+	   }
+         }
+        } else {
+          print "ERROR: Unable to open /lib${libarch}/$file with objdump\n";
+          $configok=1;
+        }
+      }
+    }
+    closedir(LIB);
+  }     else {
+     print "ERROR: Can not read the /lib${libarch} dir\n";
+     $configok=0;
+  }
+  if ($needlibiconv) {
+     print "We need the seperate iconv library\n";
+  } else {
+     print "Iconv is to be found in the c library\n";
+  }
+  return $needlibiconv;
+}
+
+sub find_static_lib {
+  my $libprefix=shift;
+  my $rval;
+  foreach my $libdir ("/usr/lib$libarch","/usr/local/lib$libarch") {
+    print "Looking for static $libprefix in $libdir\n";
+    if (opendir(LIB,$libdir)) {
+       while(my $file=readdir(LIB)) {
+         my $path="${libdir}/$file";
+         if ($file =~ /^lib(${libprefix}.*)\.a/) {
+           unless (-l $path) {
+              $rval="$1";
+           }
+         }
+       }
+       closedir(LIB);
+    } else {
+      print "WARNING: Can not read the $libdir dir\n";
+    }
+  }
+  unless ($rval) {
+     print "Static lib for $libprefix not found\n";
+  } else {
+     print "Located static lib for $libprefix ($rval)\n";
+  }
+  return $rval;
+}
+
+sub find_dynamic_lib {
+  my $libprefix=shift;
+  my $rval;
+  foreach my $libdir ("/usr/lib$libarch","/usr/local/lib$libarch") {
+    print "Looking for dynamic $libprefix in $libdir\n";
+    if (opendir(LIB,$libdir)) {
+       while(my $file=readdir(LIB)) {
+         my $path="${libdir}/$file";
+         if ($file =~ /^lib(${libprefix}.*)\.so/) {
+           unless (-l $path) {
+              $rval="$1";
+           }
+         }
+       }
+       closedir(LIB);
+    } else {
+      print "WARNING: Can not read the $libdir dir\n";
+    }
+  }
+  unless ($rval) {
+     print "Dynamic lib for $libprefix not found\n";
+  } else {
+     print "Located dynamic lib for $libprefix ($rval)\n";
+  }
+  return $rval;
+}
+
+sub find_lib {
+  my $libprefix=shift;
+  return find_static_lib($libprefix)|| find_dynamic_lib($libprefix);
+}
+
+sub iconv_validate {
+ if (iconv_lib_needed()) {
+  unless (!(find_dynamic_lib("iconv"))) {
+     print "ERROR: no iconv found in libc and no libiconv found\n";
+     $configok=0;
+  }
+ } else {
+  if (find_dynamic_lib("iconv")) {
+    print "!! WARNING !!: iconv is found in libc but you also have libiconv installed\n";
+    print "               you may need to manualy edit your configure.makeinfo or revert\n";
+    print "               to defining or uncommenting a custom makinfo file in OS.makeinfo.\n"; 
+  }
+ }
+}
+
+sub check_libtool {
+ if ($configok) {
+  $configok=0;
+  foreach my $dir ("/bin","/sbin","/usr/bin","/usr/sbin","/usr/local/bin","/usr/local/sbin") {
+    if (-f "$dir/libtool") {
+       print "Found libtool\n";
+       $configok=1;
+    } 
+  }
+  if (!$configok) {
+    print "ERR: The required libtool program is not found\n";
+  }
+ }
+}
+
+
+sub generic_config {
+ my $uname=lc(`uname`);
+ chomp($uname);
+ my $machine=lc(`uname -m`);
+ chomp($machine);
+ my $fpcastbug=0;
+ #if (getgccversion() <= 4000) {
+ #  print "Older version of g++ that might have the void pointer to function pointer casts bug\n";
+    print MAKEINFO "GCCFLAGS += -DVOID_FP_CAST_WORKAROUND\n";
+    $fpcastbug=1;
+ #}
+ $libtool="libtool";
+ if ($uname eq "linux") {
+  print "Linux\nSetting DLINUX flag\n";
+  print MAKEINFO "GCCFLAGS += -DLINUX\n";
+  if ($machine eq "x86_64") {
+     print MAKEINFO "GCCFLAGS += -DPOINTERS_64BIT\n";
+     if ($fpcastbug) {
+        print "!!! WARNING !!! : Older version of g++ on 64 bit linux. Workaround currently untested.\n";
+     }
+     if (-f "/usr/lib64/libc.so") {
+        print "WARNING: experimental lib64 support enabled, looking for lib64 dirs instead of lib dirs\n";
+        $libarch="64";
+     } else {
+        print "WARNING: experimental lib64 support disabled\n";
+     }
+  } else {
+     print "NOTICE: non x86_64 linux architecture, assuming 32 bits\n";
+  }
+ } elsif ($uname eq "sunos") {
+  print "Solaris\nSetting flags for big endiannes";
+  print MAKEINFO "GCCFLAGS += -DBIG_ENDIAN=1 -DBYTE_ORDER=1\n";
+  print "Seting /usr/sfw/include as aditional path to look for crypt inc dir\n";
+  print MAKEINFO "INCCRYPTDIR=-I/usr/sfw/include\n";
+  print "Seting as aditional path to look for crypt libs\n";
+  print MAKEINFO "LIBCRYPTDIR=-L/usr/sfw/lib\n";
+ } elsif ($uname eq "osx") {
+  print "OS X\nSeting glibtool\n";
+  $libtool="glibtool";
+ } else {
+  print "WARNING: Unknown OS\n";
+ }
+ check_libtool();
+ if ($fpcastbug) {
+   print MAKEINFO "GCCFLAGS += -DVOID_FP_CAST_WORKAROUND\n";
+ }
+ print MAKEINFO "LIBTOOL=$libtool\n";
+ #Dont think this hurts anything
+ print MAKEINFO "GCCFLAGS += -D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE -D_LARGEFILE64_SOURCE -D_REENTRANT\n";
+
+}
+
+sub iconv_stuff { 
+ if (is_iconv_const()) {
+  print "iconv buffers are set as const\n";
+  print MAKEINFO "GCCFLAGS += -DCONST_ICONV_INBUF\n";
+ } else {
+  print "default (non const) iconv buffers\n";
+ }
+ iconv_validate();
+ if (iconv_lib_needed) {
+  print MAKEINFO "LICONV_IF_NEEDED=-liconv\n";
+  print "iconv library is required\n";
+ } else {
+  print "iconv is part of libc\n";
+ }
+}
+
+sub boost_stuff {
+ my $lbsregex=find_lib("boost_regex");
+ if ($lbsregex) {
+  print "Seting boost regex lib to $lbsregex\n";
+  print MAKEINFO "BOOST_REGEX_LIB=$lbsregex\n";
+ } else {
+  print "ERROR: No boost regex lib found\n";
+  $configok=0;
+ }
+ my $lbsfilesystem = find_lib("boost_filesystem");
+ if ($lbsfilesystem) {
+   print "Seting boost filesystem lib to $lbsfilesystem\n";
+   print MAKEINFO "BOOST_FILESYSTEM_LIB=$lbsfilesystem\n";
+ } else {
+   print "ERROR: No boost filesystem lib found\n";
+   $configok=0;
+ }
+ my $newboost=0;
+ my $boostinc="";
+ foreach my $incdir ("/usr/include","/usr/local/include") {
+  opendir(INCDIR,$incdir);
+  my @files=readdir(INCDIR);
+  closedir(INCDIR);
+  foreach my $subdir (@files) {
+    if (-f "${incdir}/${subdir}/boost/regex.hpp") {
+       if ($boostinc) {
+          print "ERR: double instalation of boost ${incdir}/$subdir $boostinc\n";
+       } else {
+         $boostinc="${incdir}/$subdir";
+       }
+    }
+  }
+ }
+ unless ($boostinc) {
+  print "ERROR: No boost/regex.hpp header found for boost regular expressions lib\n";
+  $configok=0;
+  $boostinc=".";
+ } else {
+  print "boost regex files located at $boostinc\n";
+ }
+ print MAKEINFO "BOOSTINCDIR=$boostinc\n";
+ if ($lbsregex =~ /(\d)_(\d+)/) {
+  if ($1 > 1) {
+    $newboost=1;
+  } 
+  if (($1 == 1) && ($2 > 32)) {
+    $newboost=1;
+  }
+ } else {
+  print "!! WARNING !! : Unable to determine boost version, assuming >= 1.33\n";
+  $newboost=1;
+ }
+ if (open(CONFHPP,">inc/message/boostconf.hpp")) {
+   print CONFHPP "#ifndef BOOSTCONF_HPP\n";
+   print CONFHPP "#define BOOSTCONF_HPP\n";
+   unless ($newboost) {
+    print CONFHPP "// ";
+   }
+   print CONFHPP "#define OCFA_NEWBOOST_1_33\n";
+   print CONFHPP "#endif\n";
+   close(CONFHPP);
+ }
+}
+
+
+sub ace_stuff {
+ my $aceinc="";
+ foreach my $incdir ("/usr/include","/usr/local/include",$ENV{"ACE_ROOT"}) {
+  if ($incdir) {
+   opendir(INCDIR,$incdir);
+   my @files=readdir(INCDIR);
+   closedir(INCDIR);
+   foreach my $subdir (@files) {
+    if (-f "${incdir}/${subdir}/ACE.h") {
+       if ($aceinc) {
+          print "ERR: double instalation of ACE ${incdir}/$subdir $aceinc\n";
+       } else {
+         $aceinc="${incdir}/$subdir";
+       }
+    }
+   }
+  }
+ }
+ unless ($aceinc) {
+  print "ERROR: No ace/ACE.h header found for ACE communication framework lib\n";
+  $configok=0;
+  $aceinc=".";
+ } else {
+  print "ACE library located at $aceinc\n";
+ }
+ print MAKEINFO "ACEINCDIR=$aceinc\n";
+}
+
+sub postgress_stuff {
+ foreach my $dir ("/usr/include/pgsql","/usr/local/pgsql/include","/usr/include/postgresql") {
+  if (-d $dir) {
+     print "Adding $dir to includes\n";
+     print MAKEINFO "INCPQDIR=$dir\n";
+     $pqdir=$dir;
+  }
+ }
+ foreach my $dir ("/usr/local/pgsql/lib$libarch") {
+  if (-d $dir) {
+     print "Adding $dir as path for qp libraries\n";
+     print MAKEINFO "LIBPQDIR=-L$dir\n";
+  }
+ }
+
+}
+
+sub check_header {
+  my $header=shift;
+  my $headerok=0;
+  my @headerdirs=("/usr/include","/usr/local/include");
+  if ($pqdir) {
+     push(@headerdirs,$pqdir);
+  }
+  foreach my $dir (@headerdirs) {
+      if (-f "$dir/$header") {
+         print "Found $header header file\n";
+         $headerok=1;
+      }
+  }
+  unless ($headerok) {
+    print "ERR: The required header file $header was not found\n";
+    $configok=0;
+  }
+}
+
+sub template_stuff {
+  open(TARGETS,"targets.conf_in") || die "Can not open targets.conf_in for reading";
+  open(MAKEFILTMPL,"Makefile.tmpl") || die "Can not open Makefile.tmpl for reading";
+  open(MAKEFILE,">Makefile")|| die "Can not open Makefile for writing";
+  print MAKEFILE "###############################################################################\n";
+  print MAKEFILE "#Do not edit this Makefile manualy, it is generated by the configure script    #\n";
+  print MAKEFILE "#from targets.conf_in and Makefile.tmpl. If you want to add a new module please#\n";
+  print MAKEFILE "#add it to targets.conf_in and add the binaries.hpp from this dir in your      #\n";
+  print MAKEFILE "#source files where apropriate in order to use the proper version of your      #\n";
+  print MAKEFILE "#required binary or library.                                                   #\n";
+  print MAKEFILE "################################################################################\n";
+  open(INC,">binaries.hpp") || die "Can not open binaries.hpp for writing";
+  open(PINC,">binaries.conf") || die "Can not open binaries.ph for writing";
+  print INC "#ifndef BINARIES_HPP\n";
+  print INC "#define BINARIES_HPP\n";
+  print MAKEFILE "SUBTARGETS=";
+  while(<TARGETS>) {
+   chomp;
+   my $build=0;
+   my ($target,$binname,$constname)=split(/\s+/,$_);
+   if (($constname)&&($binname)) {
+      $build=0;
+      my $binpath="";
+      foreach my $prefix ("/bin/","/sbin/","/usr/bin/","/usr/sbin/","/usr/local/bin/","/usr/local/sbin/","/usr/lib/","/usr/local/lib/") {
+        if (-f "${prefix}$binname") {
+           $binpath="${prefix}$binname";
+        }
+      }
+      if ($binpath) {
+         print "$binname = $binpath\n";
+         $build=1;
+         print INC "#define $constname \"$binpath\"\n";
+         print PINC "$constname\t$binpath\n";
+      } else {
+         print "$binname not found\n";
+      }
+   } else {
+      $build=1;
+   }
+   if ($build) {
+      print MAKEFILE "$target ";
+   } else {
+      print STDERR "WARNING: $target will not get build\n";
+   }
+ }
+ foreach my $module ("Date::Parse","DB_File","File::Basename","Mail::Address",
+                 "Mail::Box::Mbox","Mail::Header","Mail::Internet",
+                 "MIME::Parser","MIME::Words","Spreadsheet::ParseExcel",
+                 "Text::Iconv") {
+   eval "use $module;\n";
+   if ($@) {
+     print "ERROR: $module perl module not installed\n";
+     $configok=0;
+   }
+ }
+ close(TARGETS);
+ print MAKEFILE "\n";
+ print INC "#endif\n";
+ close(INC);
+ close(PINC);
+ while(<MAKEFILTMPL>) {
+    print MAKEFILE "$_";
+ }
+ close(MAKEFILE);
+ close(MAKEFILTMPL);
+}
+
+sub lucene_stuff {
+  if (-f "/usr/lib$libarch/libclucene.la") {
+    print MAKEINFO "LIBCLUCENE = /usr/lib$libarch/libclucene.la\n";
+  } elsif (-f "/usr/local/lib$libarch/libclucene.la") {
+    print MAKEINFO "LIBCLUCENE = /usr/local/lib$libarch/libclucene.la\n";
+  } else {
+    print "ERR: No clucene library found (libclucene.la)\n";
+    $configok=0;
+  }
+}
+$distdir="/usr/local/ocfa$RELEASE";
+my $origdistdir=$distdir;
+$vardir="/var/ocfa";
+(my $myinitpath = $0) =~ s/(.*\/).*/$1/ ;
+(my $mynameis = $0) =~ s/.*\/(.*)/$1/ ;
+chdir ($myinitpath);
+my $pwd=$ENV{"PWD"};
+my $buildversion="";
+($buildversion = $pwd) =~ s/Ocfa.*-(\d+\..*)/$1/ if ($pwd =~ /Ocfa.*-\d+\..*/);
+my $TARGET_IS_LIB=0;
+my $TARGET_IS_ARCH=0;
+my $TARGET_IS_MODULES=0;
+if ($pwd =~ /OcfaLib-?$buildversion$/) {print "OcfaLib mode\n"; $TARGET_IS_LIB=1;}
+elsif ($pwd =~ /OcfaArch-?$buildversion$/) {print "OcfaArch mode\n"; $TARGET_IS_ARCH=1;}
+elsif ($pwd =~ /OcfaModules-?$buildversion$/) {print "OcfaModules mode\n";  $TARGET_IS_MODULES=1;}
+else {die "configure called from a non ocfa source library\n"; }
+if (open(MAKEINFO,">configure.makeinfo")) {
+   print "Creating configure.makeinfo in $pwd\n";
+} else {
+   die "$?";
+}
+my $strictcompileflags=0;
+foreach my $arg (@ARGV) {
+  if ($arg =~ /^--prefix=(.+)$/) {
+     $distdir=$1;
+  }
+  if ($arg =~ /^--localstatedir=(.+)$/) {
+     $vardir=$1;
+  }
+  if ($arg =~ /^--dev/) {
+     $strictcompileflags=1;
+  } 
+  if ($arg =~ /^--ocfainc=(.+)$/) {
+     $ocfainc=$1;
+  }
+  if ($arg =~ /^--ocfalib=(.+)$/) {
+     $ocfalib=$1;
+  }
+}
+print "Writing $distdir as distribution dir to $pwd/configure.makeinfo\n";
+print MAKEINFO "DISTDIR=$distdir\n";
+unless ($ocfainc) { 
+  if ($TARGET_IS_LIB) { 
+    $ocfainc="${distdir}/inc";
+  } else {
+    $ocfainc="${origdistdir}/inc";
+  }
+}
+unless ($ocfalib) { 
+  if ($TARGET_IS_LIB) {
+    $ocfalib="${distdir}/lib";
+  } else {
+    $ocfalib="${origdistdir}/lib";
+  }
+}
+print MAKEINFO "EXEC_PREFIX=${distdir}/bin
+HTML_PREFIX=${distdir}/doc/html
+INSTALL_HTML=${distdir}/html
+INSTALL_BIN=${distdir}/bin
+INSTALL_SBIN=${distdir}/sbin
+INSTALL_CGI=${distdir}/cgi-bin
+INSTALL_ETC=${distdir}/etc
+INSTALLIB=$ocfalib
+OCFALIBDIR=$ocfalib
+OCFAINCINSTDIR=$ocfainc
+";
+
+print MAKEINFO "VARDIR=$vardir\n";
+unless ($strictcompileflags) { print MAKEINFO "# ";}
+if ($TARGET_IS_LIB) {
+  print MAKEINFO "include \$(OCFALIB_TOP_DIR)/strict.makeinfo\n";
+} elsif ($TARGET_IS_ARCH) {
+  print MAKEINFO "include \$(OCFAARCH_TOP_DIR)/strict.makeinfo\n";
+} else {
+  print MAKEINFO "include \$(OCFAMODULE_TOP_DIR)/strict.makeinfo\n";
+}
+
+
+generic_config();
+boost_stuff();
+postgress_stuff();
+unless ($TARGET_IS_LIB) {
+  print MAKEINFO "INTERFACEDIR=$ocfainc\n";
+  lucene_stuff();
+  check_header("CLucene.h");
+}
+unless ($TARGET_IS_ARCH) { 
+  iconv_stuff();
+}
+unless ($TARGET_IS_MODULES) {
+  ace_stuff();
+  check_header("libpq-fe.h");
+}
+if ($TARGET_IS_LIB) {
+  check_header("openssl/evp.h");
+  check_header("xercesc/dom/DOMImplementation.hpp");
+  check_header("ace/Reactor.h");
+}
+if ($TARGET_IS_ARCH) {
+  check_header("cgicc/Cgicc.h"); 
+}
+if ($TARGET_IS_MODULES) {
+  print MAKEINFO "HTML_DIR=${distdir}/doc\n";
+  print MAKEINFO "LIBDIR=${distdir}/lib\n";
+  print MAKEINFO "INSTALL_STATIC=${distdir}/static\n";
+  open(LUCENEINT,">extractor/luceneindexer/inc/lucene_version.h");
+  if (&clucenenewinterface()) {
+    print LUCENEINT "#ifndef CLUCENE_NEW_READER_INTERFACE\n";
+    print LUCENEINT "#define CLUCENE_NEW_READER_INTERFACE 1\n";
+    print LUCENEINT "#endif\n";
+  } else {
+    print LUCENEINT "// Define CLUCENE_NEW_READER_INTERFACE if the version is 0.9.11, 0.9.12, 0.9.13 or 0.9.14 and lucene doesn't build\n";
+  }
+  close(LUCENEINT);
+  template_stuff();
+}
+if ($configok) {
+  print MAKEINFO "CONF_OK= true\n";
+} else {
+  print MAKEINFO "CONF_OK= \n";
+}
+close(MAKEINFO);

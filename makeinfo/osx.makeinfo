@@ -1,0 +1,4 @@
+LICONV_IF_NEEDED= -liconv
+LIBTOOL= glibtool
+GCCFLAGS += -Wno-long-double -DCONST_ICONV_INBUF
+

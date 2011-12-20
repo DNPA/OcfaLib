@@ -1,0 +1,6 @@
+Package: libocfamisc
+Version: 2.3.0
+Architecture: amd64
+Depends: libssl-dev,g++,libboost-all-dev
+Maintainer: Klpd <ocfa@dnpa.nl>
+Description: The most low level sub library in the open computer forensics architecture library. 

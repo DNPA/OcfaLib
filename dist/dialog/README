@@ -1,0 +1,2 @@
+This dir contains some scripts for dialogs that can be used to
+create ocfa.conf entries. The scripts write to stderr.

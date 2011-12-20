@@ -1,0 +1,29 @@
+A) dd if=/dev/zero of=/dev/XXXX
+B) Create the folowing partition types on the medium using fdisk:
+   1) NTFS  
+   2) Swap  
+   3) Vfat  
+   4) ext3  
+   5) ext3  
+C) Bepaal de grote van een textfile: du -ks XXXXXX.conf
+   Schrijf een aantal hele blokken in de swap area, minder dan de du !!
+   dd if=/etc/XXXXX.conf bs=1024 count=XXX of=/dev/XXXX2
+   Maak er een geldige swap van met: mkswap /dev/XXXX2
+D) Run mkfs.vfat on partitie 3.
+E) Run mkfs.ext3 op partitie 4 en 5.
+F) Mount resp partitie 3,4,5 en doe hiermee elk de stappen G tm M
+G) Copieer een dir met enkelle files,minimaal 2 subdirs met elk enkele files
+   naar de gemounte partitie. 
+H) Creer een file met de naam '_nodelete.txt'
+   en '$nodelete.txt' op de partitie.
+I) Maak een dir aan met een naam lengte van 200 karakters, en zet hierin 
+   een file met een naam van 200 karakters.
+J) Unmount de partitie.
+K) Mount de partitie opnieuw.
+L) Delete een subdir met content  en enkele files van de partitie
+M) Unmount de partitie.
+N) Gebruik fdisk om de partitie 5 te verwijderen.
+O) Partitioneer de NTFS partitie onder windows en herhaal hierop stappen
+   G tm L.
+
+

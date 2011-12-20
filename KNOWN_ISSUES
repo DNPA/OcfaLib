@@ -1,0 +1,13 @@
+* It appears that some versions of glibc (at least the one used by debian sarge) have a memory leak
+  in their iconv_close. As the misc::Scalar class in the libocfamisc library makes heavy use of
+  iconv calls, this issue results in a MAJOR MEMORY LEAK on systems that use such versions of
+  glibc. To be absolutely precise, for any 'scalar' read by a process from an xml file (these xml
+  files are used to comunicate metadata between processes and are thus very numerous), each
+  such action would leak 12 bytes of memory. Unless you plan to use the open computer forensics
+  architecture on less than a few GB of data it is strongly sugested to AVOID the usage of
+  systems that are affected by this bug in glibc.
+
+* log4clogger uses non exception safe mutex constructs. This might result in deadlocks when the logger 
+  throws an exception. The sysloglogger does not have this problem.
+
+

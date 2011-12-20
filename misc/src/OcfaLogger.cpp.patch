@@ -1,0 +1,6 @@
+46a47,49
+> 	  #ifdef VOID_FP_CAST_WORKAROUND
+>           constructor = reinterpret_cast<OcfaLogger *(*)()>(dlsym(libFileHandle, "createOcfaLogger"));
+> 	  #else
+47a51
+> 	  #endif

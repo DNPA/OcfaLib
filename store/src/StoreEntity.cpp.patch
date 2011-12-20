@@ -1,0 +1,16 @@
+282a283
+>         getLogStream(LOG_ERR) << "hard linking" << endl;
+288a290
+>         getLogStream(LOG_ERR) << "soft linking" << endl;
+291a294,304
+>     string StoreEntity::setCarvPathLink(const string &target){
+>         getLogStream(LOG_ERR) << "carvpath linking" << endl;
+>         calcDigest(target);
+>         d_storename =  target.c_str()+d_root.length();
+>         AbstractRepository::Instance()->setHandle(*this); //JBS WARNING CHECKTHIS
+>         return target;
+>     }
+>       
+>     bool StoreEntity::isLinked() {
+>        return (d_storename != string(""));
+>     }

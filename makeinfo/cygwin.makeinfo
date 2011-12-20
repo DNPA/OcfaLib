@@ -1,0 +1,10 @@
+LIBTOOL=libtool 
+GCCFLAGS += -D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE -D_LARGEFILE64_SOURCE
+GCCFLAGS += -DCONST_ICONV_INBUF
+GCCFLAGS += -DCYGWIN
+LTLINKFLAGS = -no-undefined
+BOOST_LIB=boost_serialization-gcc-mt-1_33_1
+LICONV_IF_NEEDED=-liconv
+INCPQDIR=-I/usr/include/postgresql
+ACEROOT=/home/rob/ACE_wrappers/ace/
+LIBLDL=

@@ -1,0 +1,4 @@
+#!/bin/sh
+echo deleting group ocfa
+/usr/sbin/groupdel ocfa
+echo done

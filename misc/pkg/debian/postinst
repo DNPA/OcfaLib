@@ -1,0 +1,8 @@
+#!/bin/sh
+set -e
+echo Adding group ocfa
+/usr/sbin/groupadd ocfa
+echo Updating ownership of base dirs.
+chown root:ocfa `readlink /usr/local/digiwash2.3`
+chmod 770 `readlink /usr/local/digiwash2.3`
+echo done

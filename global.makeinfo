@@ -1,0 +1,206 @@
+# !!!!! DONT USE THIS FILE FOR DEVELOPMENT, USE FOR DELOYMENT ONLY !!!!!!
+# Standard stuff.
+#
+SHELL=/bin/sh
+INSTALL=install
+CPP=g++
+#OCFAINCINSTDIR=/usr/include
+#
+# version number this is used to create some directoreis
+#
+VERSION=2.3
+RELEASE=$(VERSIONTAG)
+
+#
+#The flags that are used when compiling by 'all', and for what no warnings are expected to arise. If warnings
+#arise from these flags your code 'IS' broken.
+
+GCCFLAGS = -W -Wno-long-long
+
+#flags that fail when using the 5 version of the std lib.
+GCCFLAGS_STDLIB6   = 
+#flags that fail on both the current (6) version and older version of the std lib.
+GCCFLAGS_STDLIB_OK = 
+#flags that fail for the boost serialisation library
+GCCFLAGS_NOBOOST   = 
+#flags that fail due to use of the FDSET and related marco's
+GCCFLAGS_NOFDSET   = 
+
+#Uncomment the folowing line when you are using the 6 version of libstdc++
+#CGGFLAGS += $(GCCFLAGS_STDLIB6)
+
+#When you include this file from a makefile, choose either GCCFLAGS_STRICT to have
+#the compiler help you review your code, or the specific GCCFLAGS_xxxx belonging
+#to the subproject to have the compiler halt on non expected warnings. You should
+#add the chosen GCCFLAGS_xxxx to your CGGFLAGS definition.
+
+GCCFLAGS_STRICT = 
+
+GCCFLAGS_MISC = -Werror  
+# MISC BROKEN : $(GCCFLAGS_STDLIB_OK)
+
+GCCFLAGS_STORE = -Werror
+# STORE BROKEN: $(GCCFLAGS_STDLIB_OK)
+
+GCCFLAGS_FS = -Werror
+# FS BROKEN   :  $(GCCFLAGS_STDLIB_OK)
+
+GCCFLAGS_TG = -Werror
+
+GCCFLAGS_EVIDENCE= -Werror 
+#EVEDENCE BROKEN: $(GCCFLAGS_STDLIB_OK)
+
+GCCFLAGS_MSG= -Werror
+# MSG BROKEN: $(GCCFLAGS_STDLIB_OK) $(GCCFLAGS_NOBOOST) $(GCCFLAGS_NOFDSET)
+
+GCCFLAGS_MODULE = -Werror
+#MODULE BROKEN: $(GCCFLAGS_STDLIB_OK)
+
+GCCFLAGS_FACADE = -Werror
+# FACADE BROKEN: $(GCCFLAGS_STDLIB_OK)
+
+GCCFLAGS += -DDEFAULT_OCFAROOT=\"$(DISTDIR)\"
+
+
+#
+# The main  installation directory in which all stuff will be put.
+# shared library files will be put in subdir lib, executables in subdir lib
+# and executables that should be executed from other executables in libexec
+# according to GNU standards this should be called prefix 
+#
+DISTDIR=/usr/local/ocfa$(RELEASE)
+include $(OCFALIB_TOP_DIR)/OS.makeinfo
+#Include the version info file
+include $(OCFALIB_TOP_DIR)/VERSION-INFO.makeinfo
+
+OCFALIBDIR=$(DISTDIR)/lib
+EXEC_PREFIX=$(DISTDIR)/bin
+#OCFAINCINSTDIR=$(DISTDIR)/usr/include
+
+#
+# The directory in which the modules should be put. According 
+#
+#
+
+#
+#Installation dir of shared libraries.
+INSTALLIB=$(OCFALIBDIR)
+INSTALL_BIN=$(DISTDIR)/bin
+INSTALL_INC=$(DISTDIR)/inc
+INSTALL_ETC=$(DISTDIR)/etc
+#
+#general prefix for installing html files for the wash.
+HTML_PREFIX=$(DISTDIR)/doc/developer/html
+
+#
+# place where the html doc for this project is put when installing.
+HTML_DOCDIR=$(HTML_PREFIX)/$(PROJECT)
+
+#
+# place where html doc is put when created.
+LOCAL_HTML=doc/generated/html
+
+#
+# defines the location of doxygen
+DOXYGEN=/usr/local/bin/doxygen
+
+#
+#The source dir defines the directory in which you have put your source.
+SRCDIR=src
+#SRCDIR=src
+#
+# The Build Dir defines the directory in which all newly created stuff should be put.
+#
+BUILDDIR=build
+#Directory in which all test code is located.
+
+TESTDIR=test
+
+# INCFLAGS contains the header files.
+INCFLAGS=-I $(SUBDIR)../inc -I $(SUBDIR)inc $(EXTRAINCFLAGS)
+OCFAINCDIR = $(SUBDIR)../inc
+IMPLINCDIR=inc
+MISCLIB=$(SUBDIR)../misc/build/libocfamisc.la
+TREEGRAPHLIB=$(SUBDIR)../fs/build/libocfatreegraph.la
+FSLIB=$(SUBDIR)../fs/build/libocfafs.la
+XMLLIB=$(SUBDIR)../evidence/build/libocfaevidence.la
+
+# the lib file contains the name of the library that should be created.
+LIBNAME=$(PROJECT)
+LIBFILE=lib$(LIBNAME).so
+
+
+all: lib$(PROJECT)
+#Now include the OS configuration stuff
+LIBLDL= -ldl
+# This rules tells Make that in order to make an object file, it should
+# compile the file with the corresponding name in the src directory.
+#
+$(BUILDDIR)/%.lo: $(SRCDIR)/%.cpp $(INTERFACEDIR)/%.hpp
+	if [ ! -d $(BUILDDIR) ]; then mkdir $(BUILDDIR);fi
+	$(LIBTOOL) --tag=CPP --mode=compile  $(CPP) -ggdb -c $(GCCFLAGS) $(INCFLAGS) -o $@ $<
+
+$(BUILDDIR)/%.lo: $(SRCDIR)/%.cpp $(IMPLINCDIR)/%.hpp
+	if [ ! -d $(BUILDDIR) ]; then mkdir $(BUILDDIR);fi
+	$(LIBTOOL) --tag=CPP --mode=compile $(CPP) -ggdb -c $(GCCFLAGS) $(INCFLAGS) -o $@ $<
+
+# Target that runs the executable for the test
+#
+check: all
+	#cd test
+	$(MAKE) -w -C test run
+	#cd ..
+
+checkfault: all
+	$(MAKE) -w -C test debug
+
+
+# Target that automagically creates documentation in html and man pages for the source
+# in this project.
+#
+doc: all
+	cp Doxyfile.api Doxyfile
+	$(DOXYGEN) Bugzilla Version 2.16.5
+	rm Doxyfile
+
+devdoc: all
+	cp Doxyfile.tree Doxyfile
+	$(DOXYGEN)
+	rm Doxyfile
+
+clean: 
+	if [ -d doc/generated ]; then rm -r doc/generated; fi
+	if [ -d build/.libs ]; then rm -rf build/.libs; fi
+	/usr/bin/find build/ -maxdepth 1 -type f -exec rm  \{\} \;
+	#$(MAKE) -w -C test clean
+
+install: all
+	echo installib is $(INSTALLIB)
+	if [ ! -d $(INSTALLIB) ]; then mkdir $(INSTALLIB); fi	
+	$(LIBTOOL) --mode=install cp $(BUILDDIR)/lib*.la $(INSTALLIB)
+
+
+dpkg: all 
+	echo installib is build/debian$(INSTALLIB)
+	install -d build/debian$(INSTALLIB)
+	$(LIBTOOL) --mode=install cp $(BUILDDIR)/lib*.la $(PWD)/build/debian$(INSTALLIB)
+	install -d build/debian/DEBIAN
+	cp pkg/debian/[cp]* build/debian/DEBIAN/
+	install -d build/debian/usr/share/doc/lib$(PROJECT)
+	cp ../LICENCE build/debian/usr/share/doc/lib$(PROJECT)/copyright
+	cp ChangeLog build/debian/usr/share/doc/lib$(PROJECT)/changelog
+	echo "See regular changelog for details" >  build/debian/usr/share/doc/lib$(PROJECT)/changelog.Debian
+	gzip --best build/debian/usr/share/doc/lib$(PROJECT)/*
+	cd build;fakeroot dpkg-deb --build debian
+	install -d ../debian
+	mv build/debian.deb ../debian/lib$(PROJECT)_$(RELEASE)_amd64.deb
+	rm -rf build/debian
+
+uninstall:
+	rm -r $(INSTALLLIB)
+	rm -r $(HTML_DOCDIR)
+
+cl:
+	cvs2cl --fsf -d
+
+

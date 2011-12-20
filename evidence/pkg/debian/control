@@ -1,0 +1,6 @@
+Package: libocfaevidence
+Version: 2.3.0
+Architecture: amd64
+Depends: libocfamisc,libxerces-c-dev 
+Maintainer: klpd <ocfa@dnpa.nl>
+Description: Open computer forensics architecture XML library. 

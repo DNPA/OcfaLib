@@ -1,0 +1,5 @@
+This dir contains some stuff that can be used to install and configure the sysloglogger
+on debian.
+
+First make sure that syslogd is installed.
+Than become root and run install.sh

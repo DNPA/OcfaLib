@@ -1,0 +1,6 @@
+Package: ocfa-lib 
+Version: 2.3.0
+Architecture: amd64
+Depends: libocfamodule
+Maintainer: KLPD <ocfa@dnpa.nl>
+Description: The open computer forensics architecture core library. 

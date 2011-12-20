@@ -1,0 +1,52 @@
+RJM:CODEREVIEW this file is a proposal for new classnames.
+
+This file holds a proposal for a more understandable srt of class names that
+should make the structure of the fs library and its loadable modules more
+clear.
+
+The library itself:
+
+It would seem a good idea to rename the 'fs' lib to 'treegraph' lib.
+
+The fslib interface:
+
+	FileSystemSelector	=>	TreeGraphModuleLoader (may want to move implementation to fs/loader tree)
+	FsEntity		=>	TreeGraphNode
+	FsFileSystem		=>	TreeGraphFactory
+	FsSystemNode		:	OK
+	FsDeletedNode		:	OK
+	FsUnallocatedNode	=>	UnallocatedNode
+	FsConnectedNode		=>	ConnectedNode
+
+The directory treegraph generics: (may want to also move these to seperate fs/generic/ tree)
+
+	BasicFsFileSystem       =>      DirTreeConnector
+	BasicFsEntity           =>      DirTreeNode
+	BasicFsConnectedNode    =>      DirTreeConnectedNode
+	BasicFileDump		=>	DirTreeFileDumpImplementation
+	FileDumpOfDeletedNode	=>	DirTreeFileDumpOfDeletedNode
+	FileDumpOfSwapPartition	=>	DirTreeFileDumpOfSwapPartition
+	FileDumpOfUnalocatedNode=>	DirTreeFileDumpOfUnalocatedNode
+
+The unix module: (may want to move these to a seperate fs/modules/UnixDirTree/ tree)
+
+	UnixFileSystem		=>	ModUnixDirTreeRoot
+	UnixConnectedNode	=>	ModUnixDirTreeConnectedNode
+
+The encase export module: (may want to move these to a seperate fs/modules/EncaseExportDirTree/ tree)
+
+	EncaseExportOfVolume	=>	ModEncaseExportDirTreeRoot
+	EncaseExportOfFileSystem=>	ModEncaseExportDirTreeFsPartition
+	EncaseExportTopNode	=>	ModEncaseExportDirTreeFsRootDir
+	DeletedPseudoNode	=>	ModEncaseExportDirTreeDeletedPseudoNode
+	SystemPseudoNode	=>	ModEncaseExportDirTreeSystemPseudoNode
+
+The (future) sleuthkit carvpath module (may want to move these to a seperate fs/modules/TskCpImage/ tree)
+	TskCpTopNode            =>      ModTskCpImageConnector
+	TskCpFileSystem		=>	ModTskCpImageRoot
+	TskCpFileSystem		=>	ModTskCpImageFsPartition
+	IlsDir			=>	ModTskCpImageIlsDir
+	FlsDir			=>	ModTskCpImageFlsDir
+	IcatCpFile		=>	ModTskCpImageIcatCpFile
+	IcatCpSlack		=>	ModTskCpImageIcatCpSlack
+

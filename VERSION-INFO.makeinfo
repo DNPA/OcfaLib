@@ -1,0 +1,29 @@
+#Version info is build up out of <current>:<release>:<age>
+#
+#1) If the implementation changes and the interface does not, then the 
+#   release should be incremented.
+#
+#2) If the interface changes or is extended, then current should be incremented and
+#   release should be set to '0'. 
+#
+#3) If the interface change results in a fully compatible superset of
+#   the old interface then the age should be incremented. (implies 2 too)
+#
+VERSION_MISC=10:9:8
+VERSION_MISC_LOG4C=3:1:1
+VERSION_MISC_NULL=3:1:1
+VERSION_MISC_SYSLOG=3:1:1
+VERSION_EVENT=2:1:0
+VERSION_EVIDENCE=3:2:1
+VERSION_TREEGRAPH=11:2:3
+VERSION_FS=7:3:1
+VERSION_FS_BASIC=3:1:0
+VERSION_FS_UNIX=3:1:0
+VERSION_FS_ENCASE=3:1:0
+VERSION_STORE=4:2:0
+VERSION_STORE_PG=4:2:0
+VERSION_MESSAGE=3:1:1
+VERSION_MESSAGE_CONNECT=2:2:0
+VERSION_MESSAGE_ACCEPT=2:2:0
+VERSION_MODULE=5:6:1
+VERSION_FACADE=5:1:0

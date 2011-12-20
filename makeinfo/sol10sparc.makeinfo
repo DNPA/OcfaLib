@@ -1,0 +1,7 @@
+LIBTOOL= libtool
+GCCFLAGS += -DCONST_ICONV_INBUF -DBIG_ENDIAN=1 -DBYTE_ORDER=1 
+LIBCRYPTDIR=-L/usr/sfw/lib
+INCCRYPTDIR=-I/usr/sfw/include
+LIBPQDIR=-L/usr/local/pgsql/lib
+INCPQDIR=-I/usr/local/pgsql/include/
+

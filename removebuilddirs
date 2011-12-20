@@ -1,0 +1,9 @@
+#!/bin/bash
+  
+rm -fr message/build/*
+rm -fr evidence/build/*
+rm -fr facade/build/*
+rm -fr fs/build/*
+rm -fr misc/build/*
+rm -fr store/build/*
+rm -fr module/build/*

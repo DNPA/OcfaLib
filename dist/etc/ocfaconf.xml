@@ -1,0 +1,20 @@
+<conf name="example">
+  <var name="syslog">notice</var>
+  <!--var name="logdir">=/path/to/logdir<.var-->
+  <var name="nobg">true</var>
+  <module name="monitor">
+    <var name="nobg">false</var>
+    <class name="SimpleLogger">
+	  <var name="nobg">true</var>
+    </class>
+  </module>
+  <var name="esyslog">err</var>
+  <var name="profiling">verbose</var>
+  <var name="schemacheck">true</var>
+  <!--var name="schemadir">/path/to/schema/dir</var-->
+  <var name="prettyprint">true<.var>
+  <var name="moduletwice">fail</var>
+  <var name="maxparents">500</var>
+  <var name="ignoreowneracl">false</var>
+  <var name="ignoredirexecacl">false</var>
+</conf>

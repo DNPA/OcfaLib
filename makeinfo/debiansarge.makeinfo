@@ -1,0 +1,6 @@
+LIBTOOL= libtool
+GCCFLAGS += -DLINUX -D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE -D_LARGEFILE64_SOURCE
+INCFLAGS += -I/usr/include/postgresql
+# debian sage uses the boost library that is installed in a 
+#standard boost package
+BOOST_LIB=boost_serialization

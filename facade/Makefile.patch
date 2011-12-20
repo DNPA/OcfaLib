@@ -1,0 +1,4 @@
+13c13
+< OBJFILESLIB=$(BUILDDIR)/BaseAccessor.lo $(BUILDDIR)/EvidenceFileAccessor.lo $(BUILDDIR)/EvidenceDeriveAccessor.lo $(BUILDDIR)/TargetAccessor.lo $(BUILDDIR)/KickstartAccessor.lo $(BUILDDIR)/XMLAccessor.lo
+---
+> OBJFILESLIB=$(BUILDDIR)/BaseAccessor.lo $(BUILDDIR)/EvidenceFileAccessor.lo $(BUILDDIR)/EvidenceDeriveAccessor.lo $(BUILDDIR)/TargetAccessor.lo $(BUILDDIR)/KickstartAccessor.lo $(BUILDDIR)/XMLAccessor.lo $(BUILDDIR)/CpEvidenceDeriveAccessor.lo

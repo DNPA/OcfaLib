@@ -1,0 +1,6 @@
+Package: libocfastore
+Version: 2.3.0
+Architecture: amd64
+Depends: libocfamisc,libpq-dev 
+Maintainer: Klpd <ocfa@dnpa.nl>
+Description: The open computer forensics architecture storage library. 

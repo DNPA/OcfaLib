@@ -1,0 +1,16 @@
+2006-12 : Packaged a wide range of bug fixes.
+2006-05 : Changed the copyrights to LGPL. Release 0.6.0pl2 (Wasstraat 2.0.2)
+          Added patches to make Debian (etch+ubunto) and Suse (9.3 and 10.1)
+	  fully supported platforms.
+2006-04 : Added recoverability. OcfaLib Release 0.6 (Wasstraat 2.0)
+2005-07 : Added portability to sparc solaris 10, OSX and debian linux. 
+2005-01 :  
+	* Added auto detection of filesystem types.
+	* Added support for filesystem metadata (next to file/dir metadata).
+	* Added support for encase exports.
+2004:
+	* Changed the interface to the different types of metadata.
+        * Added a logging interface to the OcfaObject (the baseclass of most)
+	* Added class and module information to the loged info.
+	* Added class and module information to the config.
+

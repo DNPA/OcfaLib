@@ -1,0 +1,326 @@
+<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+
+<!-- Definitions that define the structure of a message used by 
+the current implmentation of the message api. 
+And definitions of the evidence xml as used by the evidence library.
+-->
+
+<xsd:element name="l2wrapper" type="messageWrapperType" />
+
+<xsd:complexType name="messageWrapperType">
+  <xsd:sequence>
+     <xsd:element name="message" type="messageType" minOccurs="0" maxOccurs="1" />
+  </xsd:sequence>
+  <xsd:attribute name="id" type="xsd:integer" use="required" />
+  <xsd:attribute name="type" type="l2MessageTypeType" />
+</xsd:complexType>
+
+<xsd:simpleType name="l2MessageTypeType" >
+ <xsd:restriction base="xsd:string" >
+   <xsd:enumeration value="task" />
+   <xsd:enumeration value="progress" />
+   <xsd:enumeration value="user" />
+   <xsd:enumeration value="internalconnect" />
+   <xsd:enumeration value="internaldisconnect" />
+ </xsd:restriction>
+</xsd:simpleType>
+
+<xsd:element name="message" type="messageType" />
+
+<xsd:complexType name="messageType">
+    <xsd:sequence>
+       <xsd:element name="sender" type="moduleInstanceType" minOccurs="1" maxOccurs="1" /> 
+       <xsd:choice minOccurs="1" maxOccurs="1">
+          <xsd:element name="broadcast" type="emptyType" />
+          <xsd:element name="unicast" type="moduleInstanceType" />
+	  <xsd:element name="anycast" type="moduleTypeType" />
+	  <xsd:element name="multicast" type="moduleTypeType" />
+       </xsd:choice>
+       <xsd:choice minOccurs="1" maxOccurs="1">
+          <xsd:element name="subscribe" type="contentType" />
+	  <xsd:element name="unsubscribe" type="contentType" />
+	  <xsd:element name="halt" type="contentType" />
+	  <xsd:element name="eoc" type="contentType" />
+	  <xsd:element name="moduleinstance" type="contentType" />
+	  <xsd:element name="heartbeat" type="contentType" />
+	  <xsd:element name="evidence" type="contentType" />
+	  <xsd:element name="disconnect" type="contentType" />
+	  <xsd:element name="progress" type="contentType" />
+	  <xsd:element name="system" type="contentType" />
+	  <xsd:element name="recover" type="contentType" />
+	  <!-- xsd:element name="evidencedata" type="evidenceType" -->
+       </xsd:choice>
+    </xsd:sequence>
+    <xsd:attribute name="prio" type="xsd:integer" use="required" />
+</xsd:complexType>
+
+<xsd:complexType name="emptyType">
+</xsd:complexType>
+
+<xsd:complexType name="contentType" >
+  <xsd:simpleContent>
+     <xsd:extension base="xsd:string" >
+            <xsd:attribute name="subject" use="required" />
+     </xsd:extension>
+  </xsd:simpleContent>
+</xsd:complexType>
+
+<xsd:complexType name="moduleTypeType" >
+   <xsd:attribute name="namespace" type="xsd:string" use="required" />
+   <xsd:attribute name="module" type="xsd:string" use="required" />
+</xsd:complexType>
+
+
+<!-- describes a single evidence that can be process by a module -->
+ <xsd:element name="evidence" type="evidenceType" />
+
+ <xsd:complexType name="evidenceType">
+   <xsd:sequence>
+    <xsd:element name="location" maxOccurs="1" minOccurs="1" type="locationType" /> 
+    <xsd:element name="nextrule" maxOccurs="1" minOccurs="0" type="xsd:integer" />   <!-- FIVES-PH: next rule -->
+    <xsd:element name="job" maxOccurs="unbounded" type="jobType"/>
+   </xsd:sequence>
+   <xsd:attribute name="id" type="evidenceIdType" use="required" />
+   <xsd:attribute name="item" type="itemtype" use="required" />
+   <xsd:attribute name="src" type="srcType" use="required" />
+   <xsd:attribute name="case" type="caseType" use="required" />
+   <xsd:attribute name="sha" type="shaType" use='optional'/>
+   <xsd:attribute name="md5" type="md5Type" use='optional'/>
+   <xsd:attribute name="storeref" type="storeRefType" use="optional" />
+   <xsd:attribute name="status" type="statusType" use="required" />
+  </xsd:complexType>
+
+<xsd:complexType name="locationType">
+   <xsd:simpleContent>
+     <xsd:extension base="xsd:string" >
+       <xsd:attribute name="name" use="required" />
+     </xsd:extension>
+   </xsd:simpleContent>
+</xsd:complexType>
+<xsd:simpleType name="statusType" >
+      <xsd:restriction base="xsd:string" >
+        <xsd:enumeration value="NEW" />
+        <xsd:enumeration value="ACTIVE" />
+        <xsd:enumeration value="COMMITTED" />
+        <xsd:enumeration value="SUSPENDED" />
+      </xsd:restriction>
+</xsd:simpleType>
+
+<!-- Enumaration of valid relation names attribute in the childevidence
+	* dirdirentry
+	* filedirentry
+        * specialdirentry
+	* removedentry
+	* partitionentry
+        * swappartitionentry
+	* undefined
+	* unallocated
+	* slack
+	* lost
+	* fsinfo
+        * content
+        * headers
+-->
+<xsd:simpleType name="relnameType" >
+      <xsd:restriction base="xsd:string" >
+        <xsd:enumeration value="dirdirentry" />
+        <xsd:enumeration value="filedirentry" />
+	<xsd:enumeration value="specialdirentry" />
+        <xsd:enumeration value="removedentry" />
+        <xsd:enumeration value="partitionentry" />
+        <xsd:enumeration value="swappartitionentry" />
+        <xsd:enumeration value="unallocated" />
+        <xsd:enumeration value="undefined" />
+        <xsd:enumeration value="slack" />
+	<xsd:enumeration value='image' />
+        <xsd:enumeration value="lost" />
+        <xsd:enumeration value="fsinfo" />
+        <xsd:enumeration value="content" />
+        <xsd:enumeration value="headers" />
+	<xsd:enumeration value="alternatestream" />
+	<xsd:enumeration value="ocfa-broken-branch" />
+      </xsd:restriction>
+</xsd:simpleType>
+
+
+<!-- describes how an evidenceid should be formatted. The current
+notation is a zero (the first evidence that was submitted), followed
+by a dot and a string consisting of jobnumber and evidence number. The
+string consists of j<jobnumber>e<evidnecenumber. The job number is the
+job in which the evidence was made, the evidence number is the order
+number of the evidence in all the evidences that were produced in that
+job. The dot and string are repeated. The last dot and string denote
+the creation of the current evidence. The ones more to the left
+desribe the creation of their parents.
+
+for example:
+
+0.j2e1.j5e4 denotes the evidence that was the fourth evidence created on job 5 of evidence with id
+
+0.j2e1 which is the evidence that was created as the first evidence in job2 of evidence:
+
+0 which is the root evidence submitted by the user..
+-->
+<xsd:simpleType name="evidenceIdType" >
+  <xsd:restriction base="xsd:string"  >
+    <xsd:pattern value="\d+(\.j\d+e\d+)*" />
+  </xsd:restriction>
+</xsd:simpleType>
+<xsd:simpleType name="itemtype">
+  <xsd:restriction base="xsd:string" />
+</xsd:simpleType>
+<xsd:simpleType name="srcType" >
+  <xsd:restriction base="xsd:string" />
+</xsd:simpleType>
+<xsd:simpleType name="caseType" >
+  <xsd:restriction base="xsd:string" />
+</xsd:simpleType>
+<xsd:simpleType name="shaType">
+  <xsd:restriction base="xsd:hexBinary" >
+   <xsd:length value="20" />
+  </xsd:restriction>
+</xsd:simpleType>
+<xsd:simpleType name="md5Type">
+  <xsd:restriction base="xsd:hexBinary"> 
+  <xsd:length value="16" />
+  </xsd:restriction>
+</xsd:simpleType>
+<xsd:simpleType name="storeRefType">
+  <xsd:restriction base="xsd:integer" />
+</xsd:simpleType>
+
+<xsd:simpleType name="commitFlagType">
+     <xsd:restriction base="xsd:string">
+      <xsd:enumeration value="NO_COMMIT" />
+      <xsd:enumeration value="SUSPEND" />
+      <xsd:enumeration value="DEFAULT" />
+      <xsd:enumeration value="STORESPEED" />
+      <xsd:enumeration value="SEARCHSPEED" />
+     </xsd:restriction>
+</xsd:simpleType>
+<xsd:simpleType name="jobStatusType">
+     <xsd:restriction base="xsd:string">
+      <xsd:enumeration value="NEW"/>
+      <xsd:enumeration value="PROCESSED"/>
+      <xsd:enumeration value="DONE" />
+     </xsd:restriction>
+</xsd:simpleType>
+ 
+
+<xsd:element name="job" type="jobType" />
+
+<xsd:complexType name="jobType">
+   <xsd:sequence>
+    <xsd:element name="argument" minOccurs="0" type="argumentType" maxOccurs="unbounded" />
+    <xsd:element name="moduleinstance" type="moduleInstanceType" minOccurs="0" maxOccurs="1" />
+    <xsd:choice minOccurs="0" maxOccurs="unbounded">
+     <xsd:element name="meta" type="metaType"/>
+     <xsd:element name="logline" type="logLineType" />
+     <xsd:element name="childevidence" type="childEvidenceType" />
+    </xsd:choice>
+   </xsd:sequence>
+   <xsd:attribute name="stime" type="timeType" use="optional" />
+   <xsd:attribute name="etime" type="timeType" use="optional" />
+   <xsd:attribute name="status" type="jobStatusType" use="optional" default="DONE" />   
+   <xsd:attribute name="profinjobtime" type="xsd:integer" use="optional" default="0" />
+   <xsd:attribute name="realinjobtime" type="xsd:integer" use="optional" default="0" />
+   <xsd:attribute name="commitflag" use="optional" type="commitFlagType" default="NO_COMMIT" />
+</xsd:complexType>
+
+ 
+<xsd:complexType name="argumentType" mixed="true">
+   <xsd:attribute name="name" type="xsd:string" use="required"/>
+ </xsd:complexType>
+
+<xsd:complexType name="moduleInstanceType" >
+   <xsd:attribute name="host" type="hostType" use="required" />
+   <xsd:attribute name="namespace" type="xsd:string" use="required" />
+   <xsd:attribute name="module" type="xsd:string" use="required" />
+   <xsd:attribute name="instance" type="xsd:string" use="required" />
+</xsd:complexType>
+
+  <xsd:simpleType name="hostType">
+  <xsd:restriction base="xsd:string" />
+  </xsd:simpleType>
+
+
+<xsd:complexType name="childEvidenceType">
+  <xsd:sequence>
+    <xsd:element name="coparent" type="coParentType" minOccurs="0" maxOccurs="unbounded" />
+  </xsd:sequence>
+    <xsd:attribute name="relname" type="relnameType" use="optional" />
+    <xsd:attribute name="evidenceid" type="evidenceIdType" use="required"/>
+    <xsd:attribute name="name" type="xsd:string" use="required" />
+</xsd:complexType>
+ 
+<xsd:complexType name="coParentType" mixed="true">
+   <xsd:simpleContent>
+     <xsd:extension base="evidenceIdType">
+        <xsd:attribute name="relname" type="xsd:string" use="optional" />
+        <xsd:attribute name="jobid" type="jobIdType" use="required" />
+        <xsd:attribute name="src" type="srcType" use="optional" />
+        <xsd:attribute name="item" type="itemtype" use="optional" />
+     </xsd:extension>
+   </xsd:simpleContent>
+</xsd:complexType>
+
+<xsd:simpleType name="jobIdType">
+  <xsd:restriction base="xsd:integer" />
+</xsd:simpleType>
+
+<xsd:complexType name="logLineType" mixed='true'>
+  <xsd:attribute name="time" type="timeType" use="required" />
+  <xsd:attribute name="prio" use="optional" default="notice">
+    <xsd:simpleType>
+      <xsd:restriction base="xsd:string">
+        <xsd:enumeration value="debug"/>
+        <xsd:enumeration value="info"/>
+        <xsd:enumeration value="notice"/>
+        <xsd:enumeration value="warning"/>
+        <xsd:enumeration value="err"/>
+        <xsd:enumeration value="crit"/>
+        <xsd:enumeration value="alert"/>
+        <xsd:enumeration value="emerg"/>
+      </xsd:restriction>
+    </xsd:simpleType>
+  </xsd:attribute>
+</xsd:complexType>
+
+<xsd:complexType name="metaType">
+  <xsd:sequence>
+    <xsd:element name="head" type="xsd:string"  minOccurs="0" maxOccurs="unbounded" />
+    <xsd:element name="scalar" type="scalarType"  minOccurs="0" maxOccurs="unbounded" />
+    </xsd:sequence>
+    <xsd:attribute name="type" use="optional" default="scalar" >
+       <xsd:simpleType>
+         <xsd:restriction base="xsd:string">
+           <xsd:enumeration value="scalar" />
+           <xsd:enumeration value="array"/>
+	   <xsd:enumeration value="table"/>
+         </xsd:restriction>
+       </xsd:simpleType>
+    </xsd:attribute>
+  <xsd:attribute name="name" type="xsd:string" use="required"/>
+  </xsd:complexType>
+  <xsd:complexType name="scalarType" >
+    <xsd:simpleContent>
+      <xsd:extension base="xsd:string">
+        <xsd:attribute name="type" use="optional" default="string">
+          <xsd:simpleType>
+             <xsd:restriction base="xsd:string">
+                <xsd:enumeration value="string" />
+                <xsd:enumeration value="int" />
+                <xsd:enumeration value="float" />
+                <xsd:enumeration value="datetime" />
+             </xsd:restriction>
+           </xsd:simpleType>
+         </xsd:attribute>
+       </xsd:extension>
+    </xsd:simpleContent>
+  </xsd:complexType>
+
+  <xsd:simpleType name="timeType">
+    <xsd:restriction base="xsd:dateTime" />
+  </xsd:simpleType>
+
+ </xsd:schema>

@@ -1,0 +1,76 @@
+In order to build libocfamessage you should
+===========================================
+
+1. install ACE
+2. install boost
+
+ACE is used for the Reactor framework and IPC.
+Boost is used for the serialization of messages.
+
+Both packages are a pain to install, so enjoy :)
+
+
+Boost make:
+===========
+
+Boost uses something called a .jam file. Jam itself
+is also part of the distribution so you have to
+build that first, using 'make'. After that you use
+jam to build boost.
+
+sudo rpm -i boost-jam-3.1.11-1.i386.rpm
+or
+tar zxvf boost-jam-3.1.11.tgz
+cd boost-jam-3.1.11
+./build.sh
+
+cd <to your boost main dir>
+sudo bjam "-sTOOLS=gcc" install
+
+ACE make (using ace 5.4.4):
+=========
+
+For ACE you have to set the ACE_ROOT environment variable
+to point to <some path on your system>/ACE/ACE_wrappers.
+Eg.: export ACE_ROOT=/home/xxxx/ACE_wrappers
+
+Also make a symlink from
+$ACE_ROOT/ace/config.h -> config-linux.h
+Eg.: cd $ACE_ROOT/ace
+     ln -s config-linux.h config.h
+     
+
+and 
+
+$ACE_ROOT/include/makeinclude/platform_macros.GNU -> platform_linux.GNU 
+Eg.: cd $ACE_ROOT/include/makeinclude/
+     ln -s platform_linux.GNU platform_macros.GNU
+
+cd $ACE_ROOT/ace
+make
+
+cd ..
+ln -s ace/libACE.so
+ln -s ace/libACE.so.5.4.4
+
+Remark: Newer versions of ace come with a (experimental) configure file, for example ACE 5.4.7.
+This makes things easier. 
+
+
+Messagelib make:
+================
+
+Update the ACEROOT variable in the makefile to point
+to the ACE_ROOT of your installation. If you don't know what
+this means try installing ACE first, it will all become clear.
+
+Make sure you have the compilerflag -DACE_LACKS_SYSLOG_H, otherwise
+ACE will include syslog.h and this will clash with OcfaLog::syslog_event_types.
+
+Furthermore, don't use pedantic-errors because the messagelib currently
+generates loads of warnings, and thus will fail to compile if you use
+this flag.
+
+
+
+

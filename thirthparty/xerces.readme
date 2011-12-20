@@ -1,0 +1,13 @@
+  cd xerces-c-src_2_6_0
+  export XERCESCROOT=`pwd`
+  cd src/xercesc 
+ 
+On Mandrake 10.1, the folowing line for runConfigure should be used:
+  runConfigure -p linux -c gcc -x g++ -d -P /usr
+Or if no debug info is required:
+  runConfigure -p linux -c gcc -x g++ -P /usr  
+
+  gmake
+  su
+  gmake install
+

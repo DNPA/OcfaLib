@@ -1,0 +1,58 @@
+$STANDARD_INFORMATION:
+	c_time						0.5
+	a_time						0.5
+	m_time						0.5
+	r_time						0.5
+	owner_id					0.5
+	security_id					0.5
+$FILE_NAME:
+	filename (unicode)				0.5
+	allocated_size      
+	real_size					0.5
+	filename_namespace  
+	flags						0.7 
+	  (ro,hidden,system,archive,device,normal,temporary,sparsefile,reparsepoint,compressed,offline,not content indexed,encrypted,directory,index)
+$OBJECT_ID :
+	guid						0.7
+	birth_volume_guid   				0.7
+	birth_object_guid				0.7
+	domain_guid					0.7
+$VOLUME_NAME:
+	name (unicode)					0.5  (factory)
+$VOLUME_INFORMATION:
+	minor_version (2000: 0 , XP : 1			0.5  (factory)
+	major_version (NT: 1, 2000/XP : 3)		0.5  (factory)
+$EA_INFORMATION: 
+>  $EA:	
+	name						0.7
+	value						0.7
+$LOGED_UTILITY_STREAM:
+	DATA		    				0.7
+$DATA:
+	DATA		    				0.7
+$BITMAP:
+	BITMAP              				0.7
+$REPARSE_POINT: **could disclose information on mountpoints, symlinks etc, not implemented for 0.5**
+	flags  						0.7
+$INDEX_ROOT:
+	name						0.7 
+	  ($I30:directories,$SDH:security descriptors,$SII:security id's,$O:object or owner id's,$Q:quota,$R:reparse points)
+	size
+>  $INDEX_ALLOCATION:  					0.7
+$SECURITY_DESCRIPTOR:					0.7
+	user_sid
+	group_sid
+	SACL:
+	   ACE[]:
+	     type (allow,deny,audit)
+	     flags  ** could disclose usefull information on inheritance and audit type, not implemented for 0.5**
+	     generic_accessmask ** could disclose usefull information on access rights, not implemented for 0.5**
+	     objectspecific_accessmask ??wat kunnen we hiermee??
+	     SID[]
+	DACL:
+	   ACE[]:
+	     type (allow,deny,audit)
+	     flags  ** could disclose usefull information on inheritance and audit type, not implemented for 0.5**
+	     generic_accessmask ** could disclose usefull information on access rights, not implemented for 0.5**
+	     objectspecific_accessmask ??wat kunnen we hiermee??
+	     SID[]

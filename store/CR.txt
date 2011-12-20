@@ -1,0 +1,19 @@
+INTERFACE
+  CpStoreEntity		NOT REVIEWED
+  linktype		REMARK: excact copy in implmentation
+  
+BOTH
+  AbstractRepository	REVIEWED
+  EvidenceStoreEntity	REVIEWED
+  Filename	        REVIEWED	
+  MetaStoreEntity	REVIEWED
+  StoreEntity		REVIEWED
+  
+IMPLEMENTATION
+  DigestPairFactory     REVIEWED
+  DummyStore
+  LibCryptDigestPair    REVIEWED
+  linktype              REVIEWED
+  PgItem                REVIEWED
+  PgRepository		REVIEWED
+  SimpleRepository      REVIEWED

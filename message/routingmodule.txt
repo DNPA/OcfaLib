@@ -1,0 +1,19 @@
+Concept voor loadable router modules:
+
+We zouden 'chanel' impliciet deel kunnen laten uitmaken van de IPC van de module naar de router.
+Hoewel chanel alleen betekenis heeft voor multicast messages, zouden we voor unicast, broadcast
+en anycast een _ prefix kunnen gebruiken.
+Indien er op de router een message binnen komt voor een _xxxx chanel waarvoor geen module is
+geladen, dan zal de router deze module laden en verwittigen van de aanwezige modules in het 
+systeem. Indien het chanel niet bekend is als loadable module, of niet met een _ begint in de naam,
+dan zal de router de 'multicast' module laden.
+
+De router modules hebben de volgende eenvoudige interface:
+
+bool	registerInstance(moduleInstance minst);  (geeft true terug als er messages klaar staan voor deze instance)
+bool	unregisterInstance(moduleInstance minst); (geeft false terug als er klaarstaande messages gedroped worden voor deze instance) 
+bool    addMessage(string chanel, Message msg); (geeft true terug als er hierdoor messages beschikbaar komen voor directe routering)
+bool    heartBeat(); (geeft true terug indien hierdoor messages beschikbaar komen voor routering)
+pair<Message *,ModuleInstance> *getMessage();
+
+

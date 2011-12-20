@@ -1,0 +1,6 @@
+61a62,64
+>       #ifdef VOID_FP_CAST_WORKAROUND
+>       constructor = reinterpret_cast<AbstractRepository*(*)(const char *)>(dlsym(handle, "createRepository"));
+>       #else
+62a66
+>       #endif

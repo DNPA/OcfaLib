@@ -1,0 +1,16 @@
+<!ELEMENT config ((var|class|module)+)>
+<!ATTLIST config
+	name	NMTOKEN #IMPLIED
+>
+<!ELEMENT module ((var|class)+)>
+<!ATTLIST module
+        name    NMTOKEN #IMPLIED
+>
+<!ELEMENT class (var+)>
+<!ATTLIST class
+	name    NMTOKEN #IMPLIED
+>
+<!ELEMENT var (#PCDATA)>
+<!ATTLIST var
+	name    NMTOKEN #IMPLIED
+>

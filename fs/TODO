@@ -1,0 +1,23 @@
+0.5
+
+* The documentation has not yet been updated with the facilities added for the use of Encase exports as input.
+
+>0.5
+
+* The source code from sleuthkit could be used to implement a SleuthkitFilesystem loadable module.
+  See TSK.TODO for more info.
+
+* The implementation of the NTFSConnectedNode is currently still broken and unfinished. But as this code is only used
+  when a module is run as root, the current lib is functional al long as kickstarting is not yet done as root.
+* The NTFSFilesystem should extend the functionality of the Sleuthkit stuff by giving access to alternate streams.
+
+* AlternateStreams suport for hfs filesystems.
+
+* If the combination of sleuthkit based modules with commercialy build modules is a problem, than the alternative
+  modules for the sleuthkit supported filesystems is required. 
+
+* Comultative sizes and allocation as metadata for directories and filesystems.
+
+* Filesystem size.
+
+

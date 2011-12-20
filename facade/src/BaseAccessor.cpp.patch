@@ -1,0 +1,23 @@
+39c39
+<     getLogStream(LOG_NOTICE) << "daemonize is forced for constructor" << endl;
+---
+>     getLogStream(LOG_ERR) << "daemonize is forced for constructor" << endl;
+41c41
+<     getLogStream(LOG_NOTICE) << "daemonize is " << OcfaConfig::Instance()->getValue("daemonize") << endl;
+---
+>     getLogStream(LOG_ERR) << "daemonize is " << OcfaConfig::Instance()->getValue("daemonize") << endl;
+45c45
+<     getLogStream(LOG_NOTICE) << "going to fork" << endl;
+---
+>     getLogStream(LOG_ERR) << "going to fork" << endl;
+53c53
+<     getLogStream(LOG_NOTICE) << "pid is " << pid  << endl;
+---
+>     getLogStream(LOG_ERR) << "pid is " << pid  << endl;
+59c59
+<       ocfa::misc::OcfaLogger::Instance()->syslog(LOG_NOTICE, "BaseAccessor ") << inNamespace << "::" << inNamespace << " going to background\n";
+---
+>       ocfa::misc::OcfaLogger::Instance()->syslog(LOG_ERR, "BaseAccessor ") << inNamespace << "::" << inNamespace << " going to background\n";
+73a74,75
+>   } else {
+>      getLogStream(LOG_ERR) << "Staying in foreground" << endl;
