@@ -16,6 +16,7 @@
 # License along with this library; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307  USA
 use warnings;
+use Term::ANSIColor qw(:constants);
 use strict;
 use diagnostics;
 our $libarch="";
@@ -49,7 +50,7 @@ sub clucenenewinterface {
                  $result = 1;
                  print "clucene version = $version\n";
               } elsif ($version > 910) {
-                 print STDERR "WARNING: clucene version $version . Please check your config for CLUCENE_NEW_READER_INTERFACE\n";
+                 print STDERR RED,"WARNING",RESET,": clucene version $version . Please check your config for CLUCENE_NEW_READER_INTERFACE\n";
               }
            }
         }
@@ -66,7 +67,7 @@ sub getgccversion {
   if ($gccverdata =~ /\s+(\d+)\.(\d+)\.\d+\s/) {
      $gccversion = $1 * 1000 + $2;
   } else {
-     print "!! WARNING !! : unable to determing g++ version, assuming 4.1 or up\n";
+     print RED,"WARNING",RESET,": unable to determing g++ version, assuming 4.1 or up\n";
   }
   print "gccversion=$gccversion\n";
   return $gccversion;
@@ -75,7 +76,7 @@ sub getgccversion {
 sub is_iconv_const {
   my $consticonv=0;
   if ((-e "/usr/include/iconv.h") && (-e "/usr/local/include/iconv.h")) {
-    print "!! WARNING !! : Two versions of iconv.h found, possible bad configuration\n";
+    print RED,"WARNING",RESET,": Two versions of iconv.h found, possible bad configuration\n";
     print "                you may need to rename /usr/local/include/iconv.h in order to\n";
     print "                prefent it from being used\n";
   }
@@ -87,7 +88,7 @@ sub is_iconv_const {
       }
     }
   } else {
-    print "ERROR: Unable to open /usr/include/iconv.h or /usr/local/include/iconv.h for parsing\n";
+    print RED,"ERROR",RESET,": Unable to open /usr/include/iconv.h or /usr/local/include/iconv.h for parsing\n";
     $configok=0;
   }
   close(IH);
@@ -111,14 +112,14 @@ sub iconv_lib_needed {
 	   }
          }
         } else {
-          print "ERROR: Unable to open /lib${libarch}/$file with objdump\n";
+          print RED,"ERROR",RESET,": Unable to open /lib${libarch}/$file with objdump\n";
           $configok=1;
         }
       }
     }
     closedir(LIB);
   }     else {
-     print "ERROR: Can not read the /lib${libarch} dir\n";
+     print RED,"ERROR",RESET,": Can not read the /lib${libarch} dir\n";
      $configok=0;
   }
   if ($needlibiconv) {
@@ -132,26 +133,26 @@ sub iconv_lib_needed {
 sub find_static_lib {
   my $libprefix=shift;
   my $rval;
-  foreach my $libdir ("/usr/lib$libarch","/usr/local/lib$libarch") {
-    print "Looking for static $libprefix in $libdir\n";
+  my $location="BOGUS";
+  foreach my $libdir ("/usr/lib","/usr/local/lib","/usr/lib$libarch","/usr/local/lib$libarch") {
+    #print "Looking for static $libprefix in $libdir\n";
     if (opendir(LIB,$libdir)) {
        while(my $file=readdir(LIB)) {
          my $path="${libdir}/$file";
          if ($file =~ /^lib(${libprefix}.*)\.a/) {
            unless (-l $path) {
               $rval="$1";
+              $location=$path;
            }
          }
        }
        closedir(LIB);
-    } else {
-      print "WARNING: Can not read the $libdir dir\n";
     }
   }
   unless ($rval) {
      print "Static lib for $libprefix not found\n";
   } else {
-     print "Located static lib for $libprefix ($rval)\n";
+     print "Located static lib for $libprefix ($location)\n";
   }
   return $rval;
 }
@@ -159,7 +160,7 @@ sub find_static_lib {
 sub find_dynamic_lib {
   my $libprefix=shift;
   my $rval;
-  foreach my $libdir ("/usr/lib$libarch","/usr/local/lib$libarch") {
+  foreach my $libdir ("/usr/lib","/usr/local/lib","/usr/lib$libarch","/usr/local/lib$libarch") {
     print "Looking for dynamic $libprefix in $libdir\n";
     if (opendir(LIB,$libdir)) {
        while(my $file=readdir(LIB)) {
@@ -171,8 +172,6 @@ sub find_dynamic_lib {
          }
        }
        closedir(LIB);
-    } else {
-      print "WARNING: Can not read the $libdir dir\n";
     }
   }
   unless ($rval) {
@@ -191,12 +190,12 @@ sub find_lib {
 sub iconv_validate {
  if (iconv_lib_needed()) {
   unless (!(find_dynamic_lib("iconv"))) {
-     print "ERROR: no iconv found in libc and no libiconv found\n";
+     print RED,"ERROR",RESET,": no iconv found in libc and no libiconv found\n";
      $configok=0;
   }
  } else {
   if (find_dynamic_lib("iconv")) {
-    print "!! WARNING !!: iconv is found in libc but you also have libiconv installed\n";
+    print RED,"WARNING",RESET,": iconv is found in libc but you also have libiconv installed\n";
     print "               you may need to manualy edit your configure.makeinfo or revert\n";
     print "               to defining or uncommenting a custom makinfo file in OS.makeinfo.\n"; 
   }
@@ -213,13 +212,14 @@ sub check_libtool {
     } 
   }
   if (!$configok) {
-    print "ERR: The required libtool program is not found\n";
+    print RED,"ERROR",RESET,": The required libtool program is not found\n";
   }
  }
 }
 
 
 sub generic_config {
+ print "Running generic config.\n";
  my $uname=lc(`uname`);
  chomp($uname);
  my $machine=lc(`uname -m`);
@@ -235,15 +235,13 @@ sub generic_config {
   print "Linux\nSetting DLINUX flag\n";
   print MAKEINFO "GCCFLAGS += -DLINUX\n";
   if ($machine eq "x86_64") {
+     print "64 bit linux architecture\n";
      print MAKEINFO "GCCFLAGS += -DPOINTERS_64BIT\n";
-     if ($fpcastbug) {
-        print "!!! WARNING !!! : Older version of g++ on 64 bit linux. Workaround currently untested.\n";
-     }
      if (-f "/usr/lib64/libc.so") {
-        print "WARNING: experimental lib64 support enabled, looking for lib64 dirs instead of lib dirs\n";
         $libarch="64";
-     } else {
-        print "WARNING: experimental lib64 support disabled\n";
+     }
+     if ((-f "/lib/x86_64-linux-gnu/libc.so") || ( -f "/usr/lib/x86_64-linux-gnu/libc.so")) {
+        $libarch="/x86_64-linux-gnu"; #this is a bit of a hack to make things work on ubuntu.
      }
   } else {
      print "NOTICE: non x86_64 linux architecture, assuming 32 bits\n";
@@ -259,7 +257,7 @@ sub generic_config {
   print "OS X\nSeting glibtool\n";
   $libtool="glibtool";
  } else {
-  print "WARNING: Unknown OS\n";
+  print RED,"WARNING",RESET,": Unknown OS\n";
  }
  check_libtool();
  if ($fpcastbug) {
@@ -293,7 +291,7 @@ sub boost_stuff {
   print "Seting boost regex lib to $lbsregex\n";
   print MAKEINFO "BOOST_REGEX_LIB=$lbsregex\n";
  } else {
-  print "ERROR: No boost regex lib found\n";
+  print RED,"ERROR",RESET,": No boost regex lib found\n";
   $configok=0;
  }
  my $lbsfilesystem = find_lib("boost_filesystem");
@@ -301,7 +299,7 @@ sub boost_stuff {
    print "Seting boost filesystem lib to $lbsfilesystem\n";
    print MAKEINFO "BOOST_FILESYSTEM_LIB=$lbsfilesystem\n";
  } else {
-   print "ERROR: No boost filesystem lib found\n";
+   print RED,"ERROR",RESET,": No boost filesystem lib found\n";
    $configok=0;
  }
  my $newboost=0;
@@ -313,7 +311,7 @@ sub boost_stuff {
   foreach my $subdir (@files) {
     if (-f "${incdir}/${subdir}/boost/regex.hpp") {
        if ($boostinc) {
-          print "ERR: double instalation of boost ${incdir}/$subdir $boostinc\n";
+          print RED,"WARNING",RESET,": double instalation of boost ${incdir}/$subdir $boostinc\n";
        } else {
          $boostinc="${incdir}/$subdir";
        }
@@ -321,7 +319,7 @@ sub boost_stuff {
   }
  }
  unless ($boostinc) {
-  print "ERROR: No boost/regex.hpp header found for boost regular expressions lib\n";
+  print RED,"ERROR",RESET,": No boost/regex.hpp header found for boost regular expressions lib\n";
   $configok=0;
   $boostinc=".";
  } else {
@@ -336,7 +334,6 @@ sub boost_stuff {
     $newboost=1;
   }
  } else {
-  print "!! WARNING !! : Unable to determine boost version, assuming >= 1.33\n";
   $newboost=1;
  }
  if (open(CONFHPP,">inc/message/boostconf.hpp")) {
@@ -362,7 +359,7 @@ sub ace_stuff {
    foreach my $subdir (@files) {
     if (-f "${incdir}/${subdir}/ACE.h") {
        if ($aceinc) {
-          print "ERR: double instalation of ACE ${incdir}/$subdir $aceinc\n";
+          print RED,"WARNING",RESET,": double instalation of ACE ${incdir}/$subdir $aceinc\n";
        } else {
          $aceinc="${incdir}/$subdir";
        }
@@ -371,7 +368,7 @@ sub ace_stuff {
   }
  }
  unless ($aceinc) {
-  print "ERROR: No ace/ACE.h header found for ACE communication framework lib\n";
+  print RED,"ERROR",RESET,": No ace/ACE.h header found for ACE communication framework lib\n";
   $configok=0;
   $aceinc=".";
  } else {
@@ -411,7 +408,7 @@ sub check_header {
       }
   }
   unless ($headerok) {
-    print "ERR: The required header file $header was not found\n";
+    print RED,"ERROR",RESET,": The required header file $header was not found\n";
     $configok=0;
   }
 }
@@ -458,7 +455,7 @@ sub template_stuff {
    if ($build) {
       print MAKEFILE "$target ";
    } else {
-      print STDERR "WARNING: $target will not get build\n";
+      print STDERR RED,"WARNING",RESET,": $target will not get build\n";
    }
  }
  foreach my $module ("Date::Parse","DB_File","File::Basename","Mail::Address",
@@ -467,7 +464,7 @@ sub template_stuff {
                  "Text::Iconv") {
    eval "use $module;\n";
    if ($@) {
-     print "ERROR: $module perl module not installed\n";
+     print RED,"ERROR",RESET,": $module perl module not installed\n";
      $configok=0;
    }
  }
@@ -489,7 +486,7 @@ sub lucene_stuff {
   } elsif (-f "/usr/local/lib$libarch/libclucene.la") {
     print MAKEINFO "LIBCLUCENE = /usr/local/lib$libarch/libclucene.la\n";
   } else {
-    print "ERR: No clucene library found (libclucene.la)\n";
+    print RED,"ERROR",RESET,": No clucene library found (libclucene.la)\n";
     $configok=0;
   }
 }

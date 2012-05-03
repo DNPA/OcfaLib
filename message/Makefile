@@ -40,20 +40,20 @@ LIBS=-lpthread -lxerces-c ../misc/build/libocfamisc.la $(LIBLDL) -L/usr/local/li
 all: lib$(PROJECT) client server
 
 lib$(PROJECT): $(OBJFILESLIB) 
-	$(LIBTOOL) --tag=CPP --mode=link $(CPP) -rpath $(INSTALLIB) -release $(RELEASE) -DACE_LACKS_SYSLOG_H $(LTLINKFLAGS) -o $(BUILDDIR)/lib$(PROJECT).la $(OBJFILESLIB) -I$(ACEROOT) ${INCFLAGS} ${LIBS}
+	$(LIBTOOL) --mode=link $(CPP) -rpath $(INSTALLIB) -release $(RELEASE) -DACE_LACKS_SYSLOG_H $(LTLINKFLAGS) -o $(BUILDDIR)/lib$(PROJECT).la $(OBJFILESLIB) -I$(ACEROOT) ${INCFLAGS} ${LIBS}
 
 client: $(OBJCLIENTLIB)
-	$(LIBTOOL) --tag=CPP --mode=link $(CPP) ${LIBS} -rpath $(INSTALLIB) -release $(RELEASE) $(LTLINKFLAGS) -o $(BUILDDIR)/libConnectMessagingEndPoint.la $(OBJCLIENTLIB) #RJM:CODEREVIEW
+	$(LIBTOOL) --mode=link $(CPP) ${LIBS} -rpath $(INSTALLIB) -release $(RELEASE) $(LTLINKFLAGS) -o $(BUILDDIR)/libConnectMessagingEndPoint.la $(OBJCLIENTLIB) #RJM:CODEREVIEW
 	#RJM:CODEREVIEW$(LIBTOOL) --mode=link $(CPP) ${LIBS} -rpath $(INSTALLIB) -release $(RELEASE) $(LTLINKFLAGS) -o $(BUILDDIR)/libClientMessageBox.la $(OBJCLIENTLIB)
 	 
 
 server: $(OBJSERVERLIB)
-	$(LIBTOOL) --tag=CPP --mode=link $(CPP) ${LIBS} -rpath $(INSTALLIB) -release $(RELEASE) $(LTLINKFLAGS) -o $(BUILDDIR)/libAcceptMessagingEndPoint.la $(OBJSERVERLIB)
+	$(LIBTOOL) --mode=link $(CPP) ${LIBS} -rpath $(INSTALLIB) -release $(RELEASE) $(LTLINKFLAGS) -o $(BUILDDIR)/libAcceptMessagingEndPoint.la $(OBJSERVERLIB)
 	#RJM:CODEREVIEW $(LIBTOOL) --mode=link $(CPP) ${LIBS} -rpath $(INSTALLIB) -release $(RELEASE) $(LTLINKFLAGS) -o $(BUILDDIR)/libServerMessageBox.la$(OBJSERVERLIB)
 # Target that creates the executable for the tests.
 #
 test: all
-	$(LIBTOOL) --tag=CPP --mode=link $(CPP) $(GCCFLAGS) -Wall -I../inc -Iinc test/simpledemo.cpp $(LTLINKFLAGS) -o  simpledemo build/libocfamessage.la ../misc/build/libocfamisc.la
+	$(LIBTOOL) --mode=link $(CPP) $(GCCFLAGS) -Wall -I../inc -Iinc test/simpledemo.cpp $(LTLINKFLAGS) -o  simpledemo build/libocfamessage.la ../misc/build/libocfamisc.la
 
 installadd: all
 	$(LIBTOOL) --mode=install cp $(BUILDDIR)/libConnectMessagingEndPoint.la $(INSTALLIB)

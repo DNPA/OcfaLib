@@ -35,20 +35,20 @@ INCFLAGS += -I$(INCPQDIR)
 all: lib$(PROJECT) pgblob pgfile
 
 lib$(PROJECT): $(OBJBASELIB)
-	$(LIBTOOL) --tag=CPP --mode=link $(CPP)  -rpath $(INSTALLIB) -release $(RELEASE) -version-info $(VERSION_STORE) $(LTLINKFLAGS) -o $(BUILDDIR)/lib$(PROJECT).la $(OBJBASELIB) ${INCFLAGS} $(MISCLIB) $(LIBS)
+	$(LIBTOOL) --mode=link $(CPP)  -rpath $(INSTALLIB) -release $(RELEASE) -version-info $(VERSION_STORE) $(LTLINKFLAGS) -o $(BUILDDIR)/lib$(PROJECT).la $(OBJBASELIB) ${INCFLAGS} $(MISCLIB) $(LIBS)
 
 pgblob: $(OBJPGLIBBLOB)
-	$(LIBTOOL) --tag=CPP --mode=link $(CPP) ${LIBS} -rpath $(INSTALLIB) -release $(RELEASE) -version-info $(VERSION_STORE_PG) $(LTLINKFLAGS) -o $(BUILDDIR)/libpgblob.la $(OBJPGLIBBLOB) ${INCFLAGS}
+	$(LIBTOOL) --mode=link $(CPP) ${LIBS} -rpath $(INSTALLIB) -release $(RELEASE) -version-info $(VERSION_STORE_PG) $(LTLINKFLAGS) -o $(BUILDDIR)/libpgblob.la $(OBJPGLIBBLOB) ${INCFLAGS}
 
 pgfile:	$(OBJPGLIBFILE)
-	$(LIBTOOL) --tag=CPP --mode=link $(CPP) ${LIBS} -rpath $(INSTALLIB) -release $(RELEASE) -version-info $(VERSION_STORE_PG) $(LTLINKFLAGS) -o $(BUILDDIR)/libpgfile.la $(OBJPGLIBFILE) ${INCFLAGS}
+	$(LIBTOOL) --mode=link $(CPP) ${LIBS} -rpath $(INSTALLIB) -release $(RELEASE) -version-info $(VERSION_STORE_PG) $(LTLINKFLAGS) -o $(BUILDDIR)/libpgfile.la $(OBJPGLIBFILE) ${INCFLAGS}
 
 
 
 # Target that creates the executable for the tests.
 #
 test: all
-	$(LIBTOOL) --tag=CPP --mode=link  $(CPP) -Wall -I../inc -Iinc test/simpledemo.cpp $(LTLINKFLAGS) -o  simpledemo build/libocfamisc.la
+	$(LIBTOOL) --mode=link  $(CPP) -Wall -I../inc -Iinc test/simpledemo.cpp $(LTLINKFLAGS) -o  simpledemo build/libocfamisc.la
 
 installadd: all
 	$(LIBTOOL) --mode=install cp $(BUILDDIR)/lib*.la $(INSTALLIB)

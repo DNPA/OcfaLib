@@ -26,10 +26,10 @@ OBJFILESLIB=$(BUILDDIR)/DomTopNode.lo $(BUILDDIR)/DomEvidence.lo $(BUILDDIR)/Job
 #
 
 lib$(PROJECT): $(OBJFILESLIB)
-	$(LIBTOOL) --tag=CPP --mode=link $(CPP) ${LIBS} -rpath $(INSTALLIB) -release $(RELEASE) -version-info $(VERSION_EVIDENCE) $(LTLINKFLAGS) -o $(BUILDDIR)/lib$(PROJECT).la $(OBJFILESLIB) $(MISCLIB) ${INCFLAGS}
+	$(LIBTOOL) --mode=link $(CPP) ${LIBS} -rpath $(INSTALLIB) -release $(RELEASE) -version-info $(VERSION_EVIDENCE) $(LTLINKFLAGS) -o $(BUILDDIR)/lib$(PROJECT).la $(OBJFILESLIB) $(MISCLIB) ${INCFLAGS}
 
 static: $(OBJFILESLIB)
-	$(LIBTOOL) --tag=CPP --mode=link $(CPP) -static ${LIBS} -rpath $(INSTALLIB) -release $(RELEASE) $(LTLINKFLAGS) -o $(BUILDDIR)/lib$(PROJECT).la $(OBJFILESLIB) $(MISCLIB) ${INCFLAGS}
+	$(LIBTOOL) --mode=link $(CPP) -static ${LIBS} -rpath $(INSTALLIB) -release $(RELEASE) $(LTLINKFLAGS) -o $(BUILDDIR)/lib$(PROJECT).la $(OBJFILESLIB) $(MISCLIB) ${INCFLAGS}
 
 #
 # Target that creates the executable for the tests.

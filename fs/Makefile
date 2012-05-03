@@ -35,21 +35,21 @@ OBJFILESENCASELIB=$(BUILDDIR)/BasicFsEntity.lo  $(BUILDDIR)/BasicFsConnectedNode
 all: lib$(PROJECT) basic unix encaseexport
 
 lib$(PROJECT): $(OBJFILESLIB)
-	$(LIBTOOL) --tag=CPP --mode=link $(CPP) ${LIBS} -rpath $(INSTALLIB) -release $(RELEASE) -version-info $(VERSION_FS) $(LTLINKFLAGS) -o $(BUILDDIR)/lib$(PROJECT).la $(OBJFILESLIB) $(MISCLIB) ${INCFLAGS}
+	$(LIBTOOL) --mode=link $(CPP) ${LIBS} -rpath $(INSTALLIB) -release $(RELEASE) -version-info $(VERSION_FS) $(LTLINKFLAGS) -o $(BUILDDIR)/lib$(PROJECT).la $(OBJFILESLIB) $(TREEGRAPHLIB) ${INCFLAGS} -Wl,--as-needed
 
 basic: $(OBJFILEBASICLIB)
-	$(LIBTOOL) --tag=CPP --mode=link $(CPP) ${LIBS} -rpath $(INSTALLIB) -release $(RELEASE) -version-info $(VERSION_FS_BASIC) $(LTLINKFLAGS) -o $(BUILDDIR)/libBasicFsFileSystem.la $(OBJFILEBASICLIB) $(MISCLIB) ${INCFLAGS}
+	$(LIBTOOL) --mode=link $(CPP) ${LIBS} -rpath $(INSTALLIB) -release $(RELEASE) -version-info $(VERSION_FS_BASIC) $(LTLINKFLAGS) -o $(BUILDDIR)/libBasicFsFileSystem.la $(OBJFILEBASICLIB) $(MISCLIB) ${INCFLAGS}
 
 unix: $(OBJFILEUNIXLIB)
-	$(LIBTOOL) --tag=CPP --mode=link $(CPP) ${LIBS} -rpath $(INSTALLIB) -release $(RELEASE) -version-info $(VERSION_FS_UNIX) $(LTLINKFLAGS) -o $(BUILDDIR)/libUnixFileSystem.la $(OBJFILEUNIXLIB) $(MISCLIB) ${INCFLAGS}
+	$(LIBTOOL) --mode=link $(CPP) ${LIBS} -rpath $(INSTALLIB) -release $(RELEASE) -version-info $(VERSION_FS_UNIX) $(LTLINKFLAGS) -o $(BUILDDIR)/libUnixFileSystem.la $(OBJFILEUNIXLIB) $(MISCLIB) ${INCFLAGS}
 
 encaseexport: $(OBJFILESENCASELIB)
-	$(LIBTOOL) --tag=CPP --mode=link $(CPP) ${LIBS} -rpath $(INSTALLIB) -release $(RELEASE) -version-info $(VERSION_FS_ENCASE) $(LTLINKFLAGS) -o $(BUILDDIR)/libEncaseExport.la $(OBJFILESENCASELIB) $(MISCLIB) ${INCFLAGS}
+	$(LIBTOOL) --mode=link $(CPP) ${LIBS} -rpath $(INSTALLIB) -release $(RELEASE) -version-info $(VERSION_FS_ENCASE) $(LTLINKFLAGS) -o $(BUILDDIR)/libEncaseExport.la $(OBJFILESENCASELIB) $(MISCLIB) ${INCFLAGS}
 
 # Target that creates the executable for the tests.
 #
 test: all
-	$(LIBTOOL) --tag=CPP --mode=link $(CPP) -ggdb $(GCCFLAGS) $(INCFLAGS) -Iinc test/simpledemo.cpp $(LTSLINKFLAGS) -o  simpledemo build/libocfafs.la
+	$(LIBTOOL) --mode=link $(CPP) -ggdb $(GCCFLAGS) $(INCFLAGS) -Iinc test/simpledemo.cpp $(LTSLINKFLAGS) -o  simpledemo build/libocfafs.la
 	#$(MAKE) -C test
 
 installadd: all

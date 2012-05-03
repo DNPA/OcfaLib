@@ -23,7 +23,7 @@ INCFLAGS+=$(INCCRYPTDIR)
 # 
 $(BUILDDIR)/OcfaObject.lo: $(SRCDIR)/OcfaObject.cpp $(OCFAINCDIR)/OcfaObject.hpp
 	if [ ! -d $(BUILDDIR) ]; then mkdir $(BUILDDIR);fi
-	$(LIBTOOL) --tag=CPP --mode=compile $(CPP) -ggdb -c $(GCCFLAGS) $(INCFLAGS) -o $@ $<
+	$(LIBTOOL) --mode=compile $(CPP) -ggdb -c $(GCCFLAGS) $(INCFLAGS) -o $@ $<
 #
 # Target which creates an shared library. You will always need a
 # library because you want to run your regression tests. 
@@ -31,10 +31,10 @@ $(BUILDDIR)/OcfaObject.lo: $(SRCDIR)/OcfaObject.cpp $(OCFAINCDIR)/OcfaObject.hpp
 #
 lib$(PROJECT): $(OBJFILESLIB)
 	echo INSTALLIB is $(INSTALLIB)
-	$(LIBTOOL) --tag=CPP --mode=link $(CPP) ${LIBS} -rpath $(INSTALLIB) -release $(RELEASE) -version-info $(VERSION_MISC) $(LTLINKFLAGS) -o $(BUILDDIR)/lib$(PROJECT).la $(OBJFILESLIB) ${INCFLAGS}
+	$(LIBTOOL) --mode=link $(CPP) ${LIBS} -rpath $(INSTALLIB) -release $(RELEASE) -version-info $(VERSION_MISC) $(LTLINKFLAGS) -o $(BUILDDIR)/lib$(PROJECT).la $(OBJFILESLIB) ${INCFLAGS}
 
 static: $(OBJFILESLIB)
-	$(LIBTOOL) --tag=CPP --mode=link $(CPP) -static ${LIBS} -rpath $(INSTALLIB) -release $(RELEASE) $(LTLINKFLAGS) -o $(BUILDDIR)/lib$(PROJECT).la $(O
+	$(LIBTOOL) --mode=link $(CPP) -static ${LIBS} -rpath $(INSTALLIB) -release $(RELEASE) $(LTLINKFLAGS) -o $(BUILDDIR)/lib$(PROJECT).la $(O
 	BJFILESLIB) ${INCFLAGS}
 
 all: lib$(PROJECT)  syslog nulllog
@@ -42,22 +42,22 @@ all: lib$(PROJECT)  syslog nulllog
 # Target that creates the executable for the tests.
 #
 test: all $(OBJFILESTEST)
-	$(LIBTOOL) --tag=CPP --mode=link $(CPP) $(GCCFLAGS) -Wall -I../inc -Iinc $(OBJFILESTEST) test/simpledemo.cpp $(LTLINKFLAGS) -o  test/simpledemo build/libocfamisc.la
-	$(LIBTOOL) --tag=CPP --mode=link $(CPP) $(GCCFLAGS) -Wall -I../inc -Iinc $(OBJFILESTEST) test/valgrind/group.cpp $(LTLINKFLAGS) -o  test/valgrind/group build/libocfamisc.la
-	$(LIBTOOL) --tag=CPP --mode=link $(CPP) $(GCCFLAGS) -Wall -I../inc -Iinc $(OBJFILESTEST) test/valgrind/log.cpp $(LTLINKFLAGS) -o  test/valgrind/log build/libocfamisc.la
+	$(LIBTOOL) --mode=link $(CPP) $(GCCFLAGS) -Wall -I../inc -Iinc $(OBJFILESTEST) test/simpledemo.cpp $(LTLINKFLAGS) -o  test/simpledemo build/libocfamisc.la
+	$(LIBTOOL) --mode=link $(CPP) $(GCCFLAGS) -Wall -I../inc -Iinc $(OBJFILESTEST) test/valgrind/group.cpp $(LTLINKFLAGS) -o  test/valgrind/group build/libocfamisc.la
+	$(LIBTOOL) --mode=link $(CPP) $(GCCFLAGS) -Wall -I../inc -Iinc $(OBJFILESTEST) test/valgrind/log.cpp $(LTLINKFLAGS) -o  test/valgrind/log build/libocfamisc.la
 
 $(BUILDDIR)/%.lo: $(SRCDIR)/%.cpp $(IMPLINCDIR)/log4c/%.hpp
 	if [ ! -d $(BUILDDIR) ]; then mkdir $(BUILDDIR);fi
-	$(LIBTOOL) --tag=CPP --mode=compile $(CPP) -ggdb -c $(INCFLAGS) -o $@ $<
+	$(LIBTOOL) --mode=compile $(CPP) -ggdb -c $(INCFLAGS) -o $@ $<
 
 log4c: all $(LOG4COBJFILES)
-	$(LIBTOOL) --tag=CPP --mode=link $(CPP) $(LIBS) $(LOG4CLIBS) -lpthread -rpath $(INSTALLIB) -release $(RELEASE) -version-info $(VERSION_MISC_LOG4C) $(LTLINKFLAGS) -o $(BUILDDIR)/libocfalog4c.la $(BUILDDIR)/lib$(PROJECT).la $(LOG4COBJFILES) 
+	$(LIBTOOL) --mode=link $(CPP) $(LIBS) $(LOG4CLIBS) -lpthread -rpath $(INSTALLIB) -release $(RELEASE) -version-info $(VERSION_MISC_LOG4C) $(LTLINKFLAGS) -o $(BUILDDIR)/libocfalog4c.la $(BUILDDIR)/lib$(PROJECT).la $(LOG4COBJFILES) 
 
 syslog: lib$(PROJECT) $(SYSLOGOBJFILES)
-	$(LIBTOOL) --tag=CPP --mode=link $(CPP) $(LIBS) -rpath $(INSTALLIB) -release $(RELEASE) -version-info $(VERSION_MISC_SYSLOG) $(LTLINKFLAGS) -o $(BUILDDIR)/libocfasyslog.la ${BUILDDIR}/lib$(PROJECT).la $(SYSLOGOBJFILES)
+	$(LIBTOOL) --mode=link $(CPP) $(LIBS) -rpath $(INSTALLIB) -release $(RELEASE) -version-info $(VERSION_MISC_SYSLOG) $(LTLINKFLAGS) -o $(BUILDDIR)/libocfasyslog.la ${BUILDDIR}/lib$(PROJECT).la $(SYSLOGOBJFILES)
 
 nulllog: lib$(PROJECT) $(NULLLOGOBJFILES)
-	$(LIBTOOL) --tag=CPP --mode=link $(CPP) $(LIBS) -rpath $(INSTALLIB) -release $(RELEASE) -version-info $(VERSION_MISC_NULL) $(LTLINKFLAGS) -o $(BUILDDIR)/libocfanulllog.la ${BUILDDIR}/lib$(PROJECT).la $(NULLLOGOBJFILES)
+	$(LIBTOOL) --mode=link $(CPP) $(LIBS) -rpath $(INSTALLIB) -release $(RELEASE) -version-info $(VERSION_MISC_NULL) $(LTLINKFLAGS) -o $(BUILDDIR)/libocfanulllog.la ${BUILDDIR}/lib$(PROJECT).la $(NULLLOGOBJFILES)
 
 installadd: all		
 	$(LIBTOOL) --mode=install cp $(BUILDDIR)/libocfasyslog.la $(INSTALLIB)

@@ -15,11 +15,12 @@ GCCFLAGS += $(GCCFLAGS_MODULE)
 #
 OBJFILESLIB=$(BUILDDIR)/OcfaModule.lo $(BUILDDIR)/EvidenceTreeWalker.lo
 
+#NOTE: adding $(TREEGRAPHLIB) to the dependencies is a hack. For some reason adding it to the filesystem lib makefile does not work on Ubuntu 11.10
 lib$(PROJECT): $(OBJFILESLIB)
-	$(LIBTOOL) --tag=CPP --mode=link $(CPP) ${LIBS} -rpath $(INSTALLIB) -release $(RELEASE) -version-info $(VERSION_MODULE) $(LTLINKFLAGS) -o $(BUILDDIR)/lib$(PROJECT).la $(OBJFILESLIB) $(MISCLIB) ${INCFLAGS}
+	$(LIBTOOL) --mode=link $(CPP) ${LIBS} -rpath $(INSTALLIB) -release $(RELEASE) -version-info $(VERSION_MODULE) $(LTLINKFLAGS) -o $(BUILDDIR)/lib$(PROJECT).la $(OBJFILESLIB) $(MSGLIB) $(XMLLIB) $(STORELIB) $(TREEGRAPHLIB) ${INCFLAGS}
 
 simpledemo: test/simpledemo.cpp 
-	$(LIBTOOL) --tag=CPP --mode=link $(CPP) -Wall -I../inc -Iinc test/simpledemo.cpp $(LTLINKFLAGS) -o  simpledemo $(FSLIB) $(XMLLIB) $(MISCLIB) 
+	$(LIBTOOL) --mode=link $(CPP) -Wall -I../inc -Iinc test/simpledemo.cpp $(LTLINKFLAGS) -o  simpledemo $(FSLIB) $(XMLLIB) $(MISCLIB) 
 
 installadd: all
 

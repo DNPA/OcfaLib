@@ -15,7 +15,7 @@ GCCFLAGS += $(GCCFLAGS_FACADE)
 OBJFILESLIB=$(BUILDDIR)/BaseAccessor.lo $(BUILDDIR)/EvidenceFileAccessor.lo $(BUILDDIR)/EvidenceDeriveAccessor.lo $(BUILDDIR)/TargetAccessor.lo $(BUILDDIR)/KickstartAccessor.lo $(BUILDDIR)/XMLAccessor.lo $(BUILDDIR)/DataStoreModule.lo
 
 lib$(PROJECT): $(OBJFILESLIB)
-	$(LIBTOOL) --tag=CPP --mode=link $(CPP) ${LIBS} -rpath $(INSTALLIB) -release $(RELEASE) -version-info $(VERSION_FACADE) $(LTLINKFLAGS) -o $(BUILDDIR)/lib$(PROJECT).la $(OBJFILESLIB) $(MISCLIB) ${INCFLAGS}
+	$(LIBTOOL) --mode=link $(CPP) ${LIBS} -rpath $(INSTALLIB) -release $(RELEASE) -version-info $(VERSION_FACADE) $(LTLINKFLAGS) -o $(BUILDDIR)/lib$(PROJECT).la $(OBJFILESLIB) $(MODULELIB) ${INCFLAGS}
 
 installadd: all
 

@@ -121,9 +121,12 @@ INCFLAGS=-I $(SUBDIR)../inc -I $(SUBDIR)inc $(EXTRAINCFLAGS)
 OCFAINCDIR = $(SUBDIR)../inc
 IMPLINCDIR=inc
 MISCLIB=$(SUBDIR)../misc/build/libocfamisc.la
-TREEGRAPHLIB=$(SUBDIR)../fs/build/libocfatreegraph.la
+TREEGRAPHLIB=$(SUBDIR)../treegraph/build/libocfatreegraph.la
 FSLIB=$(SUBDIR)../fs/build/libocfafs.la
 XMLLIB=$(SUBDIR)../evidence/build/libocfaevidence.la
+MSGLIB=$(SUBDIR)../message/build/libocfamessage.la
+STORELIB=$(SUBDIR)../store/build/libocfastore.la
+MODULELIB=$(SUBDIR)../module/build/libocfamodule.la
 
 # the lib file contains the name of the library that should be created.
 LIBNAME=$(PROJECT)
@@ -138,11 +141,11 @@ LIBLDL= -ldl
 #
 $(BUILDDIR)/%.lo: $(SRCDIR)/%.cpp $(INTERFACEDIR)/%.hpp
 	if [ ! -d $(BUILDDIR) ]; then mkdir $(BUILDDIR);fi
-	$(LIBTOOL) --tag=CPP --mode=compile  $(CPP) -ggdb -c $(GCCFLAGS) $(INCFLAGS) -o $@ $<
+	$(LIBTOOL) --mode=compile  $(CPP) -ggdb -c $(GCCFLAGS) $(INCFLAGS) -o $@ $<
 
 $(BUILDDIR)/%.lo: $(SRCDIR)/%.cpp $(IMPLINCDIR)/%.hpp
 	if [ ! -d $(BUILDDIR) ]; then mkdir $(BUILDDIR);fi
-	$(LIBTOOL) --tag=CPP --mode=compile $(CPP) -ggdb -c $(GCCFLAGS) $(INCFLAGS) -o $@ $<
+	$(LIBTOOL) --mode=compile $(CPP) -ggdb -c $(GCCFLAGS) $(INCFLAGS) -o $@ $<
 
 # Target that runs the executable for the test
 #
@@ -180,21 +183,21 @@ install: all
 	$(LIBTOOL) --mode=install cp $(BUILDDIR)/lib*.la $(INSTALLIB)
 
 
-dpkg: all 
-	echo installib is build/debian$(INSTALLIB)
-	install -d build/debian$(INSTALLIB)
-	$(LIBTOOL) --mode=install cp $(BUILDDIR)/lib*.la $(PWD)/build/debian$(INSTALLIB)
-	install -d build/debian/DEBIAN
-	cp pkg/debian/[cp]* build/debian/DEBIAN/
-	install -d build/debian/usr/share/doc/lib$(PROJECT)
-	cp ../LICENCE build/debian/usr/share/doc/lib$(PROJECT)/copyright
-	cp ChangeLog build/debian/usr/share/doc/lib$(PROJECT)/changelog
-	echo "See regular changelog for details" >  build/debian/usr/share/doc/lib$(PROJECT)/changelog.Debian
-	gzip --best build/debian/usr/share/doc/lib$(PROJECT)/*
-	cd build;fakeroot dpkg-deb --build debian
-	install -d ../debian
-	mv build/debian.deb ../debian/lib$(PROJECT)_$(RELEASE)_amd64.deb
-	rm -rf build/debian
+#dpkg: all 
+#	echo "installib is build/debian$(INSTALLIB)"
+#	install -d build/debian$(INSTALLIB)
+#	$(LIBTOOL) --mode=install cp $(BUILDDIR)/lib*.la $(PWD)/build/debian$(INSTALLIB)
+#	install -d build/debian/DEBIAN
+#	cp pkg/debian/[cp]* build/debian/DEBIAN/
+#	install -d build/debian/usr/share/doc/lib$(PROJECT)
+#	cp ../LICENCE build/debian/usr/share/doc/lib$(PROJECT)/copyright
+#	cp ChangeLog build/debian/usr/share/doc/lib$(PROJECT)/changelog
+#	echo "See regular changelog for details" >  build/debian/usr/share/doc/lib$(PROJECT)/changelog.Debian
+#	gzip --best build/debian/usr/share/doc/lib$(PROJECT)/*
+#	cd build;fakeroot dpkg-deb --build debian
+#	install -d ../debian
+#	mv build/debian.deb ../debian/lib$(PROJECT)_$(RELEASE)_amd64.deb
+#	rm -rf build/debian
 
 uninstall:
 	rm -r $(INSTALLLIB)

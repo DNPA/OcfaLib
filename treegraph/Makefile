@@ -21,7 +21,7 @@ OBJFILESLIB=$(BUILDDIR)/TreeGraphModuleLoader.lo $(BUILDDIR)/NodeDataInterface.l
 all: lib$(PROJECT) 
 
 lib$(PROJECT): $(OBJFILESLIB)
-	$(LIBTOOL) --tag=CPP --mode=link $(CPP) ${LIBS} -rpath $(INSTALLIB) -release $(RELEASE) -version-info $(VERSION_TREEGRAPH) $(LTLINKFLAGS) -o $(BUILDDIR)/lib$(PROJECT).la $(OBJFILESLIB) $(MISCLIB) ${INCFLAGS}
+	$(LIBTOOL) --mode=link $(CPP) ${LIBS} -rpath $(INSTALLIB) -release $(RELEASE) -version-info $(VERSION_TREEGRAPH) $(LTLINKFLAGS) -o $(BUILDDIR)/lib$(PROJECT).la $(OBJFILESLIB) $(MISCLIB) ${INCFLAGS}
 
 installadd:
 	echo No aditional installs for treegraph lib

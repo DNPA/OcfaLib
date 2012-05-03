@@ -6,7 +6,7 @@ echo -n Case name:
 read OCFACASE
 export OCFACASE
 echo setting OCFACASE to ${OCFACASE}
-if [ ! -f "/var/ocfa/${OCFACASE}/etc/ocfa.conf" ]; then \
+if [ ! -f "/var/ocfa/cases/${OCFACASE}/etc/ocfa.conf" ]; then \
    echo The case ${OCFACASE} does not yet exist, you may want to run createcase.pl;\
 fi;
 export LONGPATHDIR=/var/ocfa/cases/${OCFACASE}/carvpath_db

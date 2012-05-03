@@ -25,7 +25,7 @@ OBJFILESLIB=$(BUILDDIR)/FileMessage.lo  $(BUILDDIR)/FileMessageBox.lo $(BUILDDIR
 all: lib$(PROJECT) 
 
 lib$(PROJECT): $(OBJFILESLIB)
-	$(LIBTOOL) --tag=CPP --mode=link $(CPP)  -rpath $(INSTALLIB) -release $(RELEASE) $(LTLINKFLAGS) -o $(BUILDDIR)/lib$(PROJECT).la $(OBJFILESLIB) ${INCFLAGS}
+	$(LIBTOOL) --mode=link $(CPP)  -rpath $(INSTALLIB) -release $(RELEASE) $(LTLINKFLAGS) -o $(BUILDDIR)/lib$(PROJECT).la $(OBJFILESLIB) ${INCFLAGS}
 
 test: all $(BUILDDIR)/test.lo
 	$(LIBTOOL) --tag=CPP g++ -o $(BUILDDIR)/test $(BUILDDIR)/test.lo $(BUILDDIR)/lib$(PROJECT).la 
